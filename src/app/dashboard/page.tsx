@@ -34,37 +34,20 @@ const DashboardPage = () => {
     return gender === 'L' ? 'Laki-laki' : 'Perempuan'
   }
 
-  // Check for next exam when component mounts or data changes
   useEffect(() => {
     if (userData?.assigned && userData.assigned.length > 0) {
-      console.log('Checking for next exam after dashboard load...')
       setIsCheckingNextExam(true)
 
-      // Small delay to let any state updates settle
       setTimeout(() => {
         const allExams = userData.assigned
         const allCompleted = areAllExamsCompleted(allExams)
 
         if (!allCompleted) {
-          // Find next exam to continue
           const nextExam = findNextExam(allExams)
-
-          console.log('Next exam check result:', {
-            nextExam: nextExam ? { id: nextExam.exam_id, title: nextExam.title } : null,
-            allCompleted
-          })
-
           if (nextExam) {
             setNextExamFound(true)
             const nextExamSlug = createExamSlug(nextExam.title)
 
-            console.log('Auto-redirecting to next exam:', {
-              examId: nextExam.exam_id,
-              title: nextExam.title,
-              slug: nextExamSlug
-            })
-
-            // Set exam data in localStorage
             localStorage.setItem('exam_id', nextExam.exam_id.toString())
             localStorage.setItem('exam_duration', nextExam.duration.toString())
             localStorage.setItem('current_exam_slug', nextExamSlug)
@@ -75,9 +58,8 @@ const DashboardPage = () => {
             }, 1500) // 1.5 second delay to show transition
           }
         } else {
-          console.log('All exams completed - staying on dashboard')
+          console.info('All exams completed - staying on dashboard')
         }
-
         setIsCheckingNextExam(false)
       }, 1000)
     }
