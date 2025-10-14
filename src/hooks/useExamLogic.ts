@@ -6,14 +6,12 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchExam, setAnswers, setFlag, setShowSubmitModal, submitExam, resetExamState } from '@/store/examSlice';
 import { getCurrentUser } from '@/store/authSlice';
 import { validateAnswers } from '@/lib/examUtils';
-import { useExamDebug } from '@/lib/examDebugUtils';
 
 export const useExamLogic = () => {
      const router = useRouter();
      const params = useParams();
      const slug = params.slug as string;
      const dispatch = useAppDispatch();
-     const debugUtils = useExamDebug();
 
      const { dashboardData: userData } = useAppSelector((state) => state.auth);
      const {
@@ -29,21 +27,10 @@ export const useExamLogic = () => {
      } = useAppSelector((state) => state.exam);
 
      const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-
-     // Session monitoring temporarily disabled to prevent false positive modals
-     // TODO: Re-enable when backend session management is properly integrated
-
-     // Disable session expiration handling for now - will be enabled after backend integration
-     // This prevents false positive session expired modals
-     useEffect(() => {
-          // Temporarily disabled to prevent false positives
-          // TODO: Enable after proper backend session management is ready
-          console.log('Session monitoring temporarily disabled');
-     }, []);
+     const [isSubmitAllowed, setIsSubmitAllowed] = useState(false);
 
      // Reset exam state when slug changes (navigating between exams)
      useEffect(() => {
-          console.log('Slug changed to:', slug, '- Resetting exam state');
           dispatch(resetExamState());
      }, [slug, dispatch]);
 
@@ -53,19 +40,14 @@ export const useExamLogic = () => {
      }, [dispatch]);
 
      useEffect(() => {
-          if (userData?.assigned && slug) {
-               console.log('Fetching exam for slug:', slug);
-               console.log('Available exams:', userData.assigned.map(e => ({ id: e.exam_id, title: e.title })));
-               dispatch(fetchExam({ assigned: userData.assigned, slug }));
+          if (userData?.assigned && slug && userData.student?.id) {
+               dispatch(fetchExam({ assigned: userData.assigned, slug, userId: userData.student.id }));
           }
      }, [userData, slug, dispatch]);
 
      // Navigate to dashboard when exam ends (skip complete page)
      useEffect(() => {
           if (isExamEnded && !isSubmitting) {
-               console.log('Exam ended, navigating to dashboard to continue with next exam');
-
-               // Add small delay to ensure state is properly updated
                setTimeout(() => {
                     // Clear current exam data
                     localStorage.removeItem('session_token');
@@ -77,6 +59,12 @@ export const useExamLogic = () => {
                }, 500);
           }
      }, [isExamEnded, isSubmitting, router]);
+
+     // Check if submit is allowed (15 minutes before exam ends)
+     useEffect(() => {
+          const fifteenMinutesInSeconds = 15 * 60; // 15 menit = 900 detik
+          setIsSubmitAllowed(examDuration <= fifteenMinutesInSeconds);
+     }, [examDuration]);
 
      // Prevent page unload during exam
      useEffect(() => {
@@ -92,17 +80,8 @@ export const useExamLogic = () => {
 
      // Answer and flag handlers
      const handleAnswerChange = useCallback((questionId: number, answer: string | string[]) => {
-          // Debug logging untuk development
-          debugUtils.logAnswers(answers, questionId);
-
           dispatch(setAnswers({ questionId, answer }));
-
-          // Check for potential conflicts setelah update
-          setTimeout(() => {
-               const currentAnswers = { ...answers, [questionId]: { question_id: questionId, answer } };
-               debugUtils.checkAnswerConflicts(currentAnswers);
-          }, 0);
-     }, [dispatch, answers, debugUtils]);
+     }, [dispatch]);
 
      const handleFlagToggle = useCallback((questionId: number, isFlagged: boolean) => {
           dispatch(setFlag({ questionId, isFlagged }));
@@ -127,6 +106,11 @@ export const useExamLogic = () => {
 
      // Submit handlers
      const handleSubmitExam = useCallback(() => {
+          // Check if submit is allowed (15 minutes before exam ends)
+          if (!isSubmitAllowed) {
+               return; // Don't allow submit if not in the 15-minute window
+          }
+
           const validation = validateAnswers(answers, questions);
           if (validation.warnings.length > 0) {
                dispatch(setShowSubmitModal(true));
@@ -140,7 +124,7 @@ export const useExamLogic = () => {
                     }));
                }
           }
-     }, [answers, questions, dispatch, currentExam]);
+     }, [answers, questions, dispatch, currentExam, isSubmitAllowed]);
 
      const handleTimeUp = useCallback(() => {
           if (!isExamEnded && currentExam?.exam_id) {
@@ -169,8 +153,8 @@ export const useExamLogic = () => {
 
      // Retry handlers
      const retryFetchExam = useCallback(() => {
-          if (userData?.assigned) {
-               dispatch(fetchExam({ assigned: userData.assigned, slug }));
+          if (userData?.assigned && userData.student?.id) {
+               dispatch(fetchExam({ assigned: userData.assigned, slug, userId: userData.student.id }));
           }
      }, [userData, slug, dispatch]);
 
@@ -207,6 +191,7 @@ export const useExamLogic = () => {
           slug,
           showSessionExpired: false, // Always false for now
           isSessionValid: true, // Always true for now (no session monitoring)
+          isSubmitAllowed,
 
           // Handlers
           handleAnswerChange,

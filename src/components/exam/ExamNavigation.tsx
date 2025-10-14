@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StudentAnswer, ParsedQuestion } from '@/types';
 import { Flag, Check } from 'lucide-react';
-import React, { useEffect } from 'react';
-import { useNavigationDebug } from '@/lib/navigationDebugUtils';
+import React from 'react';
+import { useRandomizedQuestions } from '@/hooks/useRandomizedQuestions';
 
 interface ExamNavigationProps {
      totalQuestions: number;
@@ -18,6 +18,7 @@ interface ExamNavigationProps {
      onSubmit: () => void;
      isLastQuestion: boolean;
      isFirstQuestion: boolean;
+     isSubmitAllowed: boolean;
 }
 
 export default function ExamNavigation({
@@ -26,41 +27,19 @@ export default function ExamNavigation({
      answers,
      questions,
      onQuestionSelect,
+     onSubmit,
+     isSubmitAllowed,
 }: ExamNavigationProps) {
-     const debugUtils = useNavigationDebug();
+     const randomizedQuestions = useRandomizedQuestions();
 
-     // Debug logging ketika answers atau questions berubah
-     useEffect(() => {
-          debugUtils.logQuestionMapping(questions, answers);
-          debugUtils.logAllQuestionStatus(questions, answers);
-     }, [answers, questions, debugUtils]);
+     // Use randomized question utilities
      const getQuestionStatus = (questionNumber: number) => {
-          // Dapatkan questionId yang sebenarnya dari questions array
-          const questionIndex = questionNumber - 1;
-          const question = questions[questionIndex];
-          if (!question) return 'unanswered';
-
-          const answer = answers[question.id]; // Gunakan question.id, bukan questionNumber
-
-          if (!answer) return 'unanswered';
-
-          if (answer.is_flagged) return 'flagged';
-
-          if (Array.isArray(answer.answer)) {
-               return answer.answer.length > 0 ? 'answered' : 'unanswered';
-          } else {
-               return answer.answer && answer.answer.toString().trim() !== '' ? 'answered' : 'unanswered';
-          }
+          return randomizedQuestions.getQuestionStatus(questionNumber, answers);
      };
 
      const getAnsweredCount = () => {
-          return Object.values(answers).filter(answer => {
-               if (Array.isArray(answer.answer)) {
-                    return answer.answer.length > 0;
-               } else {
-                    return answer.answer.trim() !== '';
-               }
-          }).length;
+          const stats = randomizedQuestions.getProgressStats(answers);
+          return stats.answered;
      };
 
      const getFlaggedCount = () => {
@@ -134,30 +113,9 @@ export default function ExamNavigation({
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
-                                             const unansweredQuestions: number[] = [];
-
-                                             for (let i = 0; i < totalQuestions; i++) {
-                                                  const question = questions[i];
-                                                  if (!question) continue;
-
-                                                  const answer = answers[question.id];
-                                                  let isUnanswered = true;
-
-                                                  if (answer) {
-                                                       if (Array.isArray(answer.answer)) {
-                                                            isUnanswered = answer.answer.length === 0;
-                                                       } else {
-                                                            isUnanswered = !answer.answer || answer.answer.toString().trim() === '';
-                                                       }
-                                                  }
-
-                                                  if (isUnanswered) {
-                                                       unansweredQuestions.push(i + 1); // questionNumber
-                                                  }
-                                             }
-
-                                             if (unansweredQuestions.length > 0) {
-                                                  onQuestionSelect(unansweredQuestions[0]);
+                                             const firstUnanswered = randomizedQuestions.findFirstUnanswered(answers);
+                                             if (firstUnanswered) {
+                                                  onQuestionSelect(firstUnanswered);
                                              }
                                         }}
                                         className="text-xs"
@@ -169,13 +127,9 @@ export default function ExamNavigation({
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
-                                             const flaggedQuestions = Array.from({ length: totalQuestions }, (_, i) => {
-                                                  const question = questions[i];
-                                                  return question && answers[question.id]?.is_flagged ? i + 1 : null;
-                                             }).filter(Boolean) as number[];
-
-                                             if (flaggedQuestions.length > 0) {
-                                                  onQuestionSelect(flaggedQuestions[0]);
+                                             const firstFlagged = randomizedQuestions.findFirstFlagged(answers);
+                                             if (firstFlagged) {
+                                                  onQuestionSelect(firstFlagged);
                                              }
                                         }}
                                         className="text-xs"
@@ -183,6 +137,29 @@ export default function ExamNavigation({
                                         Soal Ditandai
                                    </Button>
                               </div>
+                         </div>
+                    </Card>
+
+                    {/* Submit Exam Button */}
+                    <Card className="p-4">
+                         <div className="space-y-2">
+                              <h4 className="font-medium text-gray-800 text-sm">Selesai Ujian</h4>
+                              <Button
+                                   onClick={onSubmit}
+                                   disabled={!isSubmitAllowed}
+                                   className={`w-full text-sm ${isSubmitAllowed
+                                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                   size="sm"
+                              >
+                                   {isSubmitAllowed ? 'Submit Ujian' : 'Submit (15 menit sebelum selesai)'}
+                              </Button>
+                              {!isSubmitAllowed && (
+                                   <p className="text-xs text-gray-600 mt-1">
+                                        Tombol submit akan aktif 15 menit sebelum waktu ujian habis
+                                   </p>
+                              )}
                          </div>
                     </Card>
 

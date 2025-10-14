@@ -15,11 +15,6 @@ import { resetExamState } from '@/store/examSlice';
 export default function ExamStartPage() {
      const dispatch = useAppDispatch();
 
-     React.useEffect(() => {
-          dispatch(resetExamState());
-          localStorage.removeItem('exam_result');
-     }, [dispatch]);
-
      const {
           userData,
           currentExam,
@@ -42,7 +37,16 @@ export default function ExamStartPage() {
           confirmSubmission,
           retryFetchExam,
           goBackToExamList,
+          examDuration,
+          isSubmitAllowed,
      } = useExamLogic();
+
+     React.useEffect(() => {
+          dispatch(resetExamState());
+          localStorage.removeItem('exam_result');
+     }, [dispatch]);
+
+
 
      if (!userData || !currentExam || isLoading || isExamEnded) {
           return <LoadingExamScreen />;
@@ -72,9 +76,7 @@ export default function ExamStartPage() {
      return (
           <ProtectedRoute>
                <div className="min-h-screen bg-gray-50">
-                    <ExamProgressHeader onTimeUp={handleTimeUp} />
-
-                    <ExamMainContent
+                    <ExamProgressHeader onTimeUp={handleTimeUp} />                    <ExamMainContent
                          currentQuestionIndex={currentQuestionIndex}
                          currentQuestion={currentQuestion}
                          onAnswerChange={handleAnswerChange}
@@ -85,6 +87,7 @@ export default function ExamStartPage() {
                          onSubmit={handleSubmitExam}
                          isFirstQuestion={isFirstQuestion}
                          isLastQuestion={isLastQuestion}
+                         isSubmitAllowed={isSubmitAllowed}
                     />
                </div>
 
@@ -94,9 +97,24 @@ export default function ExamStartPage() {
                     onSubmit={handleSubmitExam}
                     isFirstQuestion={isFirstQuestion}
                     isLastQuestion={isLastQuestion}
+                    isSubmitAllowed={isSubmitAllowed}
                />
 
-               <ExamSubmitModal onConfirmSubmit={confirmSubmission} />
+               <ExamSubmitModal onConfirmSubmit={confirmSubmission} examDuration={examDuration} />
+
+               {/* Submit notification when available */}
+               {isSubmitAllowed && (
+                    <div className='fixed bg-green-50 border border-green-200 p-4 rounded-lg shadow-lg top-20 right-4 z-50 max-w-sm'>
+                         <div className="flex items-center gap-2 text-green-800">
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                              <h3 className="font-medium">Tombol Submit Tersedia!</h3>
+                         </div>
+                         <p className="text-sm text-green-700 mt-1">
+                              Anda sudah dapat menyelesaikan ujian sekarang.
+                         </p>
+                    </div>
+               )}
+
           </ProtectedRoute>
      );
 }

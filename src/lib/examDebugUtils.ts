@@ -29,14 +29,7 @@ export const examDebugUtils = {
 
           // Validasi berdasarkan tipe soal
           switch (questionType) {
-               case '0': // Multiple Choice Complex
-                    if (!Array.isArray(answer)) {
-                         validationResult.isValid = false;
-                         validationResult.errors.push('Multiple choice complex harus berupa array');
-                    }
-                    break;
-
-               case '1': // Multiple Choice Single
+               case '0': // Single Choice (Pilihan Ganda)
                     if (Array.isArray(answer)) {
                          if (answer.length > 1) {
                               validationResult.isValid = false;
@@ -45,7 +38,23 @@ export const examDebugUtils = {
                     }
                     break;
 
-               case '2': // Essay
+               case '1': // Multiple Choice Complex (Pilihan Ganda Kompleks)
+                    if (!Array.isArray(answer)) {
+                         validationResult.isValid = false;
+                         validationResult.errors.push('Multiple choice complex harus berupa array');
+                    }
+                    break;
+
+               case '2': // True/False (Benar Salah)
+                    if (Array.isArray(answer)) {
+                         if (answer.length > 1) {
+                              validationResult.isValid = false;
+                              validationResult.errors.push('True/False tidak boleh lebih dari 1 jawaban');
+                         }
+                    }
+                    break;
+
+               case '3': // Essay
                     if (typeof answer !== 'string') {
                          validationResult.isValid = false;
                          validationResult.errors.push('Essay answer harus berupa string');

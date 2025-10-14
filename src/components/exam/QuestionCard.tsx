@@ -3,8 +3,9 @@
 import { ParsedQuestion, StudentAnswer } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Flag, FlagOff } from 'lucide-react';
+import { Flag, FlagOff, Info } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { getComplexMultipleChoiceInfo } from '@/lib/examUtils';
 
 interface QuestionCardProps {
      question: ParsedQuestion;
@@ -38,7 +39,7 @@ export default function QuestionCard({
                if (Array.isArray(currentAnswer.answer)) {
                     setSelectedAnswers(currentAnswer.answer);
                } else {
-                    if (question.question_type_id === '2') {
+                    if (question.question_type_id === '3') { // Essay type
                          setEssayAnswer(currentAnswer.answer);
                     } else {
                          setSelectedAnswers([currentAnswer.answer]);
@@ -74,38 +75,17 @@ export default function QuestionCard({
           onFlagToggle(question.id, newFlagState);
      };
 
+     // Get scoring info for complex multiple choice (type '1')
+     const complexChoiceInfo = question.question_type_id === '1'
+          ? getComplexMultipleChoiceInfo(question.points, question.answer_key)
+          : null;
+
+
+
      const renderQuestionType = () => {
           switch (question.question_type_id) {
                case '0':
-                    return (
-                         <div className="space-y-3">
-                              <p className="text-sm text-gray-600 mb-4">
-                                   <strong>Pilih semua jawaban yang benar:</strong>
-                              </p>
-                              {Object.entries(question.choices).map(([key, value]) => (
-                                   <label
-                                        key={key}
-                                        className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${selectedAnswers.includes(key)
-                                             ? 'border-blue-500 bg-blue-50'
-                                             : 'border-gray-200 hover:border-gray-300'
-                                             }`}
-                                   >
-                                        <input
-                                             type="checkbox"
-                                             checked={selectedAnswers.includes(key)}
-                                             onChange={() => handleMultipleChoice(key)}
-                                             className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                        />
-                                        <div className="flex-1">
-                                             <span className="font-medium text-gray-800">{key}.</span>
-                                             <span className="ml-2 text-gray-700">{value}</span>
-                                        </div>
-                                   </label>
-                              ))}
-                         </div>
-                    );
-
-               case '1':
+                    // Pilihan Ganda - Single Choice (Radio Button)
                     return (
                          <div className="space-y-3">
                               <p className="text-sm text-gray-600 mb-4">
@@ -114,9 +94,9 @@ export default function QuestionCard({
                               {Object.entries(question.choices).map(([key, value]) => (
                                    <label
                                         key={key}
-                                        className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${selectedAnswers.includes(key)
-                                             ? 'border-blue-500 bg-blue-50'
-                                             : 'border-gray-200 hover:border-gray-300'
+                                        className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAnswers.includes(key)
+                                             ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                             : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                                              }`}
                                    >
                                         <input
@@ -136,7 +116,108 @@ export default function QuestionCard({
                          </div>
                     );
 
+               case '1':
+                    // Pilihan Ganda Kompleks - Multiple Choice (Checkbox)
+                    return (
+                         <div className="space-y-3">
+                              <div className="mb-4">
+                                   <p className="text-sm text-gray-600 mb-2">
+                                        <strong>Pilih semua jawaban yang benar (bisa lebih dari satu):</strong>
+                                   </p>
+                                   {complexChoiceInfo && (
+                                        <div className="flex items-start gap-2 text-xs text-blue-600 bg-blue-50 p-3 rounded-md border border-blue-200">
+                                             <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                             <div>
+                                                  <p className="font-medium mb-1">Sistem Penilaian:</p>
+                                                  <p>{complexChoiceInfo.description}</p>
+                                                  <p className="mt-1">
+                                                       Contoh: Jika Anda memilih 3 pilihan dan 1 diantaranya benar,
+                                                       maka nilai Anda = {complexChoiceInfo.pointsPerAnswer} poin
+                                                  </p>
+                                             </div>
+                                        </div>
+                                   )}
+                              </div>
+                              {Object.entries(question.choices).map(([key, value]) => (
+                                   <label
+                                        key={key}
+                                        className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAnswers.includes(key)
+                                             ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                             : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                                             }`}
+                                   >
+                                        <input
+                                             type="checkbox"
+                                             checked={selectedAnswers.includes(key)}
+                                             onChange={() => handleMultipleChoice(key)}
+                                             className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <div className="flex-1">
+                                             <span className="font-medium text-gray-800">{key}.</span>
+                                             <span className="ml-2 text-gray-700">{value}</span>
+                                        </div>
+                                   </label>
+                              ))}
+
+                              {selectedAnswers.length > 0 && (
+                                   <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                                        <p className="text-sm font-medium text-gray-700 mb-2">
+                                             Jawaban yang dipilih:
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                             {selectedAnswers.map(answer => (
+                                                  <span
+                                                       key={answer}
+                                                       className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm font-medium"
+                                                  >
+                                                       {answer}
+                                                  </span>
+                                             ))}
+                                        </div>
+                                        <p className="text-xs text-gray-600 mt-2">
+                                             Total pilihan: {selectedAnswers.length}
+                                        </p>
+                                   </div>
+                              )}
+                         </div>
+                    );
+
                case '2':
+                    // Benar Salah - True/False (Radio Button)
+                    return (
+                         <div className="space-y-3">
+                              <p className="text-sm text-gray-600 mb-4">
+                                   <strong>Pilih Benar atau Salah:</strong>
+                              </p>
+                              {Object.entries(question.choices).map(([key, value]) => (
+                                   <label
+                                        key={key}
+                                        className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAnswers.includes(key)
+                                             ? key.toLowerCase().includes('benar') || key.toLowerCase() === 'b' || value.toLowerCase().includes('true')
+                                                  ? 'border-green-500 bg-green-50 shadow-sm'
+                                                  : 'border-red-500 bg-red-50 shadow-sm'
+                                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                             }`}
+                                   >
+                                        <input
+                                             type="radio"
+                                             name={`question-${question.id}-tf`}
+                                             value={key}
+                                             checked={selectedAnswers.includes(key)}
+                                             onChange={() => handleSingleChoice(key)}
+                                             className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                        />
+                                        <div className="flex-1">
+                                             <span className="font-medium text-gray-800">{key}.</span>
+                                             <span className="ml-2 text-gray-700">{value}</span>
+                                        </div>
+                                   </label>
+                              ))}
+                         </div>
+                    );
+
+               case '3':
+                    // Essay
                     return (
                          <div className="space-y-3">
                               <p className="text-sm text-gray-600 mb-4">
@@ -146,7 +227,7 @@ export default function QuestionCard({
                                    value={essayAnswer}
                                    onChange={(e) => handleEssayChange(e.target.value)}
                                    placeholder="Tulis jawaban Anda di sini..."
-                                   className="w-full min-h-[200px] p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+                                   className="w-full min-h-[200px] p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical transition-colors"
                               />
                               <p className="text-xs text-gray-500">
                                    Karakter: {essayAnswer.length}
@@ -165,9 +246,10 @@ export default function QuestionCard({
 
      const getQuestionTypeLabel = () => {
           switch (question.question_type_id) {
-               case '0': return 'Pilihan Ganda Kompleks';
-               case '1': return 'Pilihan Ganda';
-               case '2': return 'Essay';
+               case '0': return 'Pilihan Ganda';
+               case '1': return 'Pilihan Ganda Kompleks';
+               case '2': return 'Benar Salah';
+               case '3': return 'Essay';
                default: return 'Tipe Soal';
           }
      };

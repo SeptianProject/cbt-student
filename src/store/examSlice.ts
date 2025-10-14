@@ -1,12 +1,15 @@
 import { createSlice, createAsyncThunk, PayloadAction, Draft } from '@reduxjs/toolkit';
 import { examService } from '@/services/exam';
 import { parseExamQuestions, findExamBySlug } from '@/lib/examUtils';
+import { randomizeQuestions, saveRandomizationData, loadRandomizationData, clearRandomizationData, RandomizedQuestionResult } from '@/lib/questionRandomizer';
 import { ParsedQuestion, StudentAnswer, AssignedExam } from '@/types';
 import type { Question } from '@/types';
 
 interface ExamState {
      currentExam: AssignedExam | null;
      questions: ParsedQuestion[];
+     originalQuestions: ParsedQuestion[]; // Store original order questions
+     randomizationData: RandomizedQuestionResult | null; // Store randomization mapping
      answers: Record<number, StudentAnswer>;
      isLoading: boolean;
      isError: boolean;
@@ -32,6 +35,8 @@ interface ExamState {
 const initialState: ExamState = {
      currentExam: null,
      questions: [],
+     originalQuestions: [],
+     randomizationData: null,
      answers: {},
      isLoading: false,
      isError: false,
@@ -45,11 +50,11 @@ const initialState: ExamState = {
 
 export const fetchExam = createAsyncThunk(
      'exam/fetchExam',
-     async ({ assigned, slug }: { assigned: AssignedExam[]; slug: string }) => {
+     async ({ assigned, slug, userId }: { assigned: AssignedExam[]; slug: string; userId: number }) => {
           const exam = findExamBySlug(assigned, slug);
           if (!exam) throw new Error('Exam not found');
-          const examData = await examService.examStart(Number(exam.exam_id));
-          return { exam, examData };
+          const examData = await examService.examStartSafe(Number(exam.exam_id));
+          return { exam, examData, userId };
      }
 );
 
@@ -116,8 +121,11 @@ const examSlice = createSlice({
           setIsExamEnded(state: Draft<ExamState>, action: PayloadAction<boolean>) {
                state.isExamEnded = action.payload;
           },
-          resetExamState() {
-               console.log('Resetting exam state to initial state');
+          resetExamState(state: Draft<ExamState>) {
+               // Clear randomization data saat reset
+               if (state.currentExam?.exam_id) {
+                    clearRandomizationData(state.currentExam.exam_id);
+               }
                return initialState;
           },
           setSubmitResult(state: Draft<ExamState>, action: PayloadAction<ExamState['submitResult']>) {
@@ -138,25 +146,53 @@ const examSlice = createSlice({
                          action: PayloadAction<{
                               exam: AssignedExam;
                               examData: { exam: unknown; success: boolean };
+                              userId: number;
                          }>
                     ) => {
-                         console.log('Exam fetch fulfilled:', {
-                              examId: action.payload.exam.exam_id,
-                              examTitle: action.payload.exam.title,
-                              questionsCount: (action.payload.examData.exam as Question[])?.length || 0
-                         });
+
 
                          state.currentExam = action.payload.exam;
-                         // pastikan examData.exam bertipe Question[]
-                         state.questions = parseExamQuestions(action.payload.examData.exam as Question[]);
+
+                         // Parse questions dalam urutan original
+                         const parsedQuestions = parseExamQuestions(action.payload.examData.exam as Question[]);
+                         state.originalQuestions = parsedQuestions;
+
+                         // Load existing randomization data jika ada
+                         const existingRandomization = loadRandomizationData(action.payload.exam.exam_id);
+
+                         if (existingRandomization && existingRandomization.originalToRandomizedMap.size > 0) {
+                              // Apply existing randomization
+                              const randomizedQuestions = [...parsedQuestions];
+                              randomizedQuestions.sort((a, b) => {
+                                   const aOriginalIndex = parsedQuestions.findIndex(q => q.id === a.id);
+                                   const bOriginalIndex = parsedQuestions.findIndex(q => q.id === b.id);
+                                   const aRandomizedIndex = existingRandomization.originalToRandomizedMap.get(aOriginalIndex) ?? aOriginalIndex;
+                                   const bRandomizedIndex = existingRandomization.originalToRandomizedMap.get(bOriginalIndex) ?? bOriginalIndex;
+                                   return aRandomizedIndex - bRandomizedIndex;
+                              });
+
+                              state.questions = randomizedQuestions;
+                              state.randomizationData = {
+                                   ...existingRandomization,
+                                   questions: randomizedQuestions
+                              };
+                         } else {
+                              // Create new randomization
+                              const randomizationResult = randomizeQuestions(
+                                   parsedQuestions,
+                                   action.payload.userId,
+                                   action.payload.exam.exam_id
+                              );
+
+                              state.questions = randomizationResult.questions;
+                              state.randomizationData = randomizationResult;
+
+                              // Save randomization data
+                              saveRandomizationData(randomizationResult, action.payload.exam.exam_id);
+                         }
+
                          state.examDuration = (action.payload.exam.duration || 120) * 60;
                          state.isLoading = false;
-
-                         console.log('Exam state updated:', {
-                              currentExamId: state.currentExam?.exam_id,
-                              questionsCount: state.questions.length,
-                              duration: state.examDuration
-                         });
                     }
                )
                .addCase(fetchExam.rejected, (state: Draft<ExamState>, action: { error: { message?: string } }) => {
@@ -170,11 +206,6 @@ const examSlice = createSlice({
                     state.errorMessage = null;
                })
                .addCase(submitExam.fulfilled, (state: Draft<ExamState>, action) => {
-                    console.log('Exam submission successful:', {
-                         examId: state.currentExam?.exam_id,
-                         examTitle: state.currentExam?.title
-                    });
-
                     state.isSubmitting = false;
                     state.isExamEnded = true;
                     state.showSubmitModal = false;
@@ -195,13 +226,7 @@ const examSlice = createSlice({
                               submission_time: examData.submission_time,
                          };
 
-                         // Note: We're skipping localStorage storage of exam_result 
-                         // since we're not showing complete page anymore
-                         console.log('Exam submitted successfully:', {
-                              examTitle: examData.exam_title,
-                              score: examData.total_score,
-                              percentage: examData.percentage
-                         });
+
                     }
 
                     // Update localStorage exam status
@@ -213,7 +238,6 @@ const examSlice = createSlice({
                          }
 
                          const statuses: ExamStatus[] = JSON.parse(localStorage.getItem('exam_statuses') || '[]');
-                         console.log('Current exam statuses before update:', statuses);
 
                          const updatedStatuses = statuses.map((status) =>
                               status.exam_id === state.currentExam?.exam_id
@@ -230,8 +254,6 @@ const examSlice = createSlice({
                               });
                          }
 
-                         console.log('Updated exam statuses:', updatedStatuses);
-                         console.log('Marking exam as completed:', state.currentExam.exam_id, state.currentExam.title);
                          localStorage.setItem('exam_statuses', JSON.stringify(updatedStatuses));
 
                          // Clear session token after successful submission
@@ -243,7 +265,6 @@ const examSlice = createSlice({
                     state.isError = true;
                     state.errorMessage = action.error?.message || 'Failed to submit exam';
                     // Don't set isExamEnded to true on error - keep user in exam
-                    console.error('Submit exam error:', action.error?.message);
                });
      },
 });

@@ -11,6 +11,7 @@ interface ExamNavigationFooterProps {
      onSubmit: () => void;
      isFirstQuestion: boolean;
      isLastQuestion: boolean;
+     isSubmitAllowed: boolean;
 }
 
 export const ExamNavigationFooter: React.FC<ExamNavigationFooterProps> = ({
@@ -19,6 +20,7 @@ export const ExamNavigationFooter: React.FC<ExamNavigationFooterProps> = ({
      onSubmit,
      isFirstQuestion,
      isLastQuestion,
+     isSubmitAllowed
 }) => {
      return (
           <div className='sticky bottom-0 left-0'>
@@ -34,18 +36,21 @@ export const ExamNavigationFooter: React.FC<ExamNavigationFooterProps> = ({
                               Sebelumnya
                          </Button>
 
+                         {/* Jika sudah soal terakhir dan submit diizinkan maka bisa disubmit */}
                          {isLastQuestion ? (
                               <Button
                                    onClick={onSubmit}
-                                   className="flex items-center gap-2 bg-red-500 hover:bg-red-600"
-                              >
-                                   Selesai Ujian
+                                   disabled={!isSubmitAllowed}
+                                   className={`flex items-center gap-2 ${isSubmitAllowed
+                                             ? 'bg-red-500 hover:bg-red-600'
+                                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        }`}>
+                                   {isSubmitAllowed ? 'Selesai Ujian' : 'Submit (15 menit sebelum selesai)'}
                               </Button>
                          ) : (
                               <Button
                                    onClick={onNext}
-                                   className="flex items-center gap-2"
-                              >
+                                   className="flex items-center gap-2">
                                    Selanjutnya
                                    <ChevronRight className="h-4 w-4" />
                               </Button>

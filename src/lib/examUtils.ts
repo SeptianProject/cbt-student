@@ -227,19 +227,25 @@ export const validateAnswers = (answers: Record<number, StudentAnswer>, question
 
           // Validate based on question type
           switch (question.question_type_id) {
-               case '0': // Multiple choice complex
-                    if (!Array.isArray(answer.answer) || answer.answer.length === 0) {
-                         validation.warnings.push(`Soal ${index + 1} (pilihan ganda kompleks) belum dijawab`);
-                    }
-                    break;
-
-               case '1': // Single choice
+               case '0': // Single choice (Pilihan Ganda)
                     if (!answer.answer || (typeof answer.answer === 'string' && answer.answer.trim() === '')) {
                          validation.warnings.push(`Soal ${index + 1} (pilihan ganda) belum dijawab`);
                     }
                     break;
 
-               case '2': // Essay
+               case '1': // Multiple choice complex (Pilihan Ganda Kompleks)
+                    if (!Array.isArray(answer.answer) || answer.answer.length === 0) {
+                         validation.warnings.push(`Soal ${index + 1} (pilihan ganda kompleks) belum dijawab`);
+                    }
+                    break;
+
+               case '2': // True/False (Benar Salah)
+                    if (!answer.answer || (typeof answer.answer === 'string' && answer.answer.trim() === '')) {
+                         validation.warnings.push(`Soal ${index + 1} (benar/salah) belum dijawab`);
+                    }
+                    break;
+
+               case '3': // Essay
                     if (!answer.answer || (typeof answer.answer === 'string' && answer.answer.trim() === '')) {
                          validation.warnings.push(`Soal ${index + 1} (essay) belum dijawab`);
                     } else if (typeof answer.answer === 'string' && answer.answer.trim().length < 10) {
@@ -267,6 +273,61 @@ export const parseExamSlug = (slug: string): string => {
           .split('-')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
+};
+
+/**
+ * Calculate score for multiple choice complex questions
+ * Formula: (total_points / correct_answers_count) * correct_selected_answers
+ * 
+ * @param totalPoints - Total points for the question
+ * @param correctAnswers - Array of correct answer keys (e.g., ["A", "C"])
+ * @param selectedAnswers - Array of student selected answers (e.g., ["A", "B", "C"])
+ * @returns Calculated score for the question
+ */
+export const calculateComplexMultipleChoiceScore = (
+     totalPoints: number,
+     correctAnswers: string[],
+     selectedAnswers: string[]
+): number => {
+     if (!correctAnswers || correctAnswers.length === 0) {
+          return 0;
+     }
+
+     // Calculate points per correct answer
+     const pointsPerCorrectAnswer = totalPoints / correctAnswers.length;
+
+     // Count how many correct answers were selected
+     const correctSelectedCount = selectedAnswers.filter(answer =>
+          correctAnswers.includes(answer)
+     ).length;
+
+     // Calculate final score
+     const score = pointsPerCorrectAnswer * correctSelectedCount;
+
+     return Math.round(score * 100) / 100; // Round to 2 decimal places
+};
+
+/**
+ * Get scoring information for a complex multiple choice question
+ * 
+ * @param totalPoints - Total points for the question
+ * @param correctAnswers - Array of correct answer keys
+ * @returns Scoring information object
+ */
+export const getComplexMultipleChoiceInfo = (
+     totalPoints: number,
+     correctAnswers: string[]
+) => {
+     const pointsPerAnswer = correctAnswers.length > 0
+          ? Math.round((totalPoints / correctAnswers.length) * 100) / 100
+          : 0;
+
+     return {
+          totalPoints,
+          correctAnswersCount: correctAnswers.length,
+          pointsPerAnswer,
+          description: `Setiap jawaban benar bernilai ${pointsPerAnswer} poin (${totalPoints} ÷ ${correctAnswers.length} = ${pointsPerAnswer})`
+     };
 };
 
 // Find exam by slug from assigned exams

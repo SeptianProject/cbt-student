@@ -3,27 +3,90 @@ import { Exam, StudentAnswer, AssignedExam, ParsedQuestion, ExamSubmitOptions, A
 import { findExamBySlug } from "@/lib/examUtils";
 
 export const examService = {
+     // Clear any existing session for the exam
+     clearExamSession: async (examId: number): Promise<void> => {
+          try {
+               const sessionToken = localStorage.getItem('session_token');
+               if (sessionToken) {
+                    // Try to submit with force_submit to end existing session
+                    await api.post(`/siswa/exams/${examId}/submit`, {
+                         session_token: sessionToken,
+                         force_submit: true,
+                         final_submit: true,
+                         answers: {},
+                         essay_answers: {}
+                    }, {
+                         headers: {
+                              Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                         }
+                    });
+               }
+          } catch (error) {
+               console.log('Error clearing session (might be expected):', error);
+               // Ignore errors - session might already be expired or invalid
+          } finally {
+               // Always clear local session token
+               localStorage.removeItem('session_token');
+          }
+     },
+
      examStart: async (examId: number): Promise<Exam> => {
           if (!examId) {
                throw new Error('Exam ID is required');
           }
-          const response = await api.post<Exam>(`/siswa/exams/${examId}/start`, {}, {
-               headers: {
-                    Authorization: `Bearer ${localStorage.getItem('api_token')}`
-               }
-          });
 
-          // Store session_token if provided in response
-          if (response.data && typeof response.data === 'object' && 'session_token' in response.data) {
-               const responseWithToken = response.data as { session_token?: string };
-               if (responseWithToken.session_token) {
-                    localStorage.setItem('session_token', responseWithToken.session_token);
+          try {
+               const response = await api.post<Exam>(`/siswa/exams/${examId}/start`, {}, {
+                    headers: {
+                         Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                    }
+               });
+
+               // Store session_token if provided in response
+               if (response.data && typeof response.data === 'object' && 'session_token' in response.data) {
+                    const responseWithToken = response.data as { session_token?: string };
+                    if (responseWithToken.session_token) {
+                         localStorage.setItem('session_token', responseWithToken.session_token);
+                    }
                }
+
+               console.log('exam id:', examId);
+               console.log('data exam start :', response.data);
+               return response.data;
+          } catch (error: unknown) {
+               // Check if error is due to existing active session
+               const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+               if (axiosError?.response?.status === 422 &&
+                    axiosError?.response?.data?.message?.includes('sesi ujian yang aktif')) {
+
+                    console.log('Active session detected, clearing and retrying...');
+
+                    // Clear existing session and retry
+                    await examService.clearExamSession(examId);
+
+                    // Retry starting the exam
+                    const retryResponse = await api.post<Exam>(`/siswa/exams/${examId}/start`, {}, {
+                         headers: {
+                              Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                         }
+                    });
+
+                    // Store session_token if provided in response
+                    if (retryResponse.data && typeof retryResponse.data === 'object' && 'session_token' in retryResponse.data) {
+                         const responseWithToken = retryResponse.data as { session_token?: string };
+                         if (responseWithToken.session_token) {
+                              localStorage.setItem('session_token', responseWithToken.session_token);
+                         }
+                    }
+
+                    console.log('exam id (retry):', examId);
+                    console.log('data exam start (retry):', retryResponse.data);
+                    return retryResponse.data;
+               }
+
+               // Re-throw other errors
+               throw error;
           }
-
-          console.log('exam id:', examId);
-          console.log('data exam start :', response.data);
-          return response.data;
      },
 
      examStartBySlug: async (slug: string, assignedExams: AssignedExam[]): Promise<Exam> => {
@@ -37,6 +100,26 @@ export const examService = {
           localStorage.setItem('current_exam_slug', slug);
 
           return examService.examStart(exam.exam_id);
+     },
+
+     // Safe exam start with automatic session clearing if needed
+     examStartSafe: async (examId: number): Promise<Exam> => {
+          try {
+               return await examService.examStart(examId);
+          } catch (error: unknown) {
+               const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+
+               // If there's an active session, clear it and try again
+               if (axiosError?.response?.status === 422 &&
+                    axiosError?.response?.data?.message?.includes('sesi ujian yang aktif')) {
+
+                    console.log('Active session detected, clearing and retrying...');
+                    await examService.clearExamSession(examId);
+                    return await examService.examStart(examId);
+               }
+
+               throw error;
+          }
      },
 
      getExamIdFromSlug: (slug: string, assignedExams: AssignedExam[]): number | null => {
@@ -68,8 +151,8 @@ export const examService = {
                const question = questions.find(q => q.id === answer.question_id);
 
                if (question && answer.answer !== undefined && answer.answer !== null && answer.answer !== '') {
-                    // Question type: "0" = Multiple Choice Complex, "1" = Multiple Choice Single, "2" = Essay
-                    if (question.question_type_id === "2") {
+                    // Question type: "0" = Multiple Choice, "1" = Multiple Choice Complex, "2" = True/False, "3" = Essay
+                    if (question.question_type_id === "3") {
                          // Essay question - store as string (max 5000 chars as per backend validation)
                          const essayAnswer = Array.isArray(answer.answer)
                               ? answer.answer.join(', ')
@@ -80,14 +163,14 @@ export const examService = {
                               essayAnswers[answer.question_id.toString()] = essayAnswer.substring(0, 5000);
                          }
                     } else {
-                         // Multiple choice questions - store as string (max 10 chars as per backend validation)
+                         // Multiple choice questions (types "0", "1", "2") - store as string (max 10 chars as per backend validation)
                          let mcAnswer = '';
 
                          if (Array.isArray(answer.answer)) {
-                              // For multiple choice complex (type "0"), join array elements
+                              // For multiple choice complex (type "1"), join array elements
                               mcAnswer = answer.answer.filter(a => a !== '').join(',');
                          } else {
-                              // For single choice (type "1"), use as is
+                              // For single choice (types "0" and "2"), use as is
                               mcAnswer = String(answer.answer || '');
                          }
 
@@ -221,6 +304,56 @@ export const examService = {
           return response.data;
      },
 
+     // Force end any existing session for an exam
+     forceEndSession: async (examId: number): Promise<void> => {
+          try {
+               // Try different approaches to end the session
+               const sessionToken = localStorage.getItem('session_token');
+
+               if (sessionToken) {
+                    // First try: Submit with force_submit to end session gracefully
+                    await api.post(`/siswa/exams/${examId}/submit`, {
+                         session_token: sessionToken,
+                         force_submit: true,
+                         final_submit: true,
+                         answers: {},
+                         essay_answers: {}
+                    }, {
+                         headers: {
+                              Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                         }
+                    });
+               }
+          } catch {
+               console.log('Session force end completed (errors are expected)');
+          }
+
+          // Always clear local storage
+          localStorage.removeItem('session_token');
+          localStorage.removeItem('exam_result');
+          localStorage.removeItem('current_exam_slug');
+     },
+
+     // Check if user has an active session for exam
+     checkActiveSession: async (examId: number): Promise<boolean> => {
+          try {
+               const sessionToken = localStorage.getItem('session_token');
+               if (!sessionToken) return false;
+
+               const response = await api.post(`/siswa/exams/${examId}/status`, {
+                    session_token: sessionToken
+               }, {
+                    headers: {
+                         Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                    }
+               });
+
+               return response.data?.success === true;
+          } catch {
+               return false;
+          }
+     },
+
      // Auto-save answers without final submission (for periodic saves)
      autoSaveAnswers: async (
           examId: number,
@@ -241,7 +374,7 @@ export const examService = {
                const question = questions.find(q => q.id === answer.question_id);
 
                if (question) {
-                    if (question.question_type_id === "2") {
+                    if (question.question_type_id === "3") {
                          // Essay question
                          const essayAnswer = Array.isArray(answer.answer)
                               ? answer.answer.join(', ')
@@ -249,12 +382,14 @@ export const examService = {
 
                          essayAnswers[answer.question_id.toString()] = essayAnswer.substring(0, 5000);
                     } else {
-                         // Multiple choice questions
+                         // Multiple choice questions (types "0", "1", "2")
                          let mcAnswer = '';
 
                          if (Array.isArray(answer.answer)) {
+                              // For multiple choice complex (type "1")
                               mcAnswer = answer.answer.join(',');
                          } else {
+                              // For single choice (types "0" and "2")
                               mcAnswer = String(answer.answer || '');
                          }
 

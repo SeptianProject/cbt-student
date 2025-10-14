@@ -51,7 +51,7 @@ export interface Student {
 export interface Question {
      id: number;
      exam_id: number;
-     question_type_id: string; // "0": Multiple Choice Complex, "1": Multiple Choice Single, "2": Essay, etc.
+     question_type_id: string; // "0": Multiple Choice (Single), "1": Multiple Choice Complex, "2": True/False, "3": Essay
      question_text: string;
      choices: string; // JSON string: {"A": "option A", "B": "option B", ...}
      answer_key: string; // JSON string array: "[\"A\",\"C\"]" for multiple choice

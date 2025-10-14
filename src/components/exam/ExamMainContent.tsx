@@ -17,6 +17,7 @@ interface ExamMainContentProps {
      onSubmit: () => void;
      isFirstQuestion: boolean;
      isLastQuestion: boolean;
+     isSubmitAllowed: boolean;
 }
 
 export const ExamMainContent: React.FC<ExamMainContentProps> = ({
@@ -30,6 +31,7 @@ export const ExamMainContent: React.FC<ExamMainContentProps> = ({
      onSubmit,
      isFirstQuestion,
      isLastQuestion,
+     isSubmitAllowed,
 }) => {
      const { questions, answers } = useAppSelector((state) => state.exam);
 
@@ -61,6 +63,7 @@ export const ExamMainContent: React.FC<ExamMainContentProps> = ({
                                    onSubmit={onSubmit}
                                    isLastQuestion={isLastQuestion}
                                    isFirstQuestion={isFirstQuestion}
+                                   isSubmitAllowed={isSubmitAllowed}
                               />
                          </div>
                     </div>

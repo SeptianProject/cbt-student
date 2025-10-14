@@ -10,9 +10,10 @@ import { setShowSubmitModal } from '@/store/examSlice';
 
 interface ExamSubmitModalProps {
      onConfirmSubmit: () => void;
+     examDuration: number;
 }
 
-export const ExamSubmitModal: React.FC<ExamSubmitModalProps> = ({ onConfirmSubmit }) => {
+export const ExamSubmitModal: React.FC<ExamSubmitModalProps> = ({ onConfirmSubmit, examDuration }) => {
      const dispatch = useAppDispatch();
      const { questions, answers, showSubmitModal, isSubmitting, isError, errorMessage } = useAppSelector((state) => state.exam);
      const progress = calculateExamProgress(answers, questions.length);
@@ -29,7 +30,7 @@ export const ExamSubmitModal: React.FC<ExamSubmitModalProps> = ({ onConfirmSubmi
                     <div className="text-center mb-4">
                          <AlertTriangle className="h-12 w-12 text-orange-500 mx-auto mb-2" />
                          <h3 className="text-lg font-semibold text-gray-900">
-                              Konfirmasi Selesai Ujian
+                              {examDuration < 900 ? `Masih ada sisa waktu ${examDuration - 15 * 60} detik` : 'Konfirmasi Selesai Ujian'}
                          </h3>
                     </div>
 
@@ -66,15 +67,13 @@ export const ExamSubmitModal: React.FC<ExamSubmitModalProps> = ({ onConfirmSubmi
                               variant="outline"
                               onClick={handleClose}
                               disabled={isSubmitting}
-                              className="flex-1"
-                         >
+                              className="flex-1">
                               {isSubmitting ? 'Mengirim...' : 'Lanjut Mengerjakan'}
                          </Button>
                          <Button
                               onClick={onConfirmSubmit}
                               disabled={isSubmitting}
-                              className="flex-1 bg-primary/90 hover:bg-primary text-white"
-                         >
+                              className="flex-1 bg-primary/90 hover:bg-primary text-white">
                               {isSubmitting ? 'Mengirim Jawaban...' : 'Selesai Ujian'}
                          </Button>
                     </div>

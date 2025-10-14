@@ -25,8 +25,8 @@ export function ExamTimer({ initialTime, onTimeUp, onTimeUpdate, autoSubmit = tr
                return;
           }
 
-          // Show warning when 5 minutes left
-          if (timeLeft <= 300 && !isWarning) {
+          // Show warning when 15 minutes left (submit becomes available)
+          if (timeLeft <= 900 && !isWarning) {
                setIsWarning(true);
           }
 
@@ -56,9 +56,11 @@ export function ExamTimer({ initialTime, onTimeUp, onTimeUpdate, autoSubmit = tr
 
      const getTimerColor = () => {
           const percentage = (timeLeft / initialTime) * 100;
+          const fifteenMinutesInSeconds = 15 * 60; // 900 seconds
+
           if (percentage <= 5) return 'text-red-600 animate-pulse';
           if (percentage <= 10) return 'text-red-600';
-          if (percentage <= 25) return 'text-orange-600';
+          if (timeLeft <= fifteenMinutesInSeconds) return 'text-orange-600';
           return 'text-green-600';
      };
 
@@ -101,7 +103,9 @@ export function ExamTimer({ initialTime, onTimeUp, onTimeUpdate, autoSubmit = tr
                {isWarning && (
                     <div className="mt-2">
                          <p className="text-xs text-orange-700">
-                              Waktu hampir habis! Segera selesaikan ujian Anda.
+                              {timeLeft <= 300
+                                   ? "Waktu hampir habis! Segera selesaikan ujian Anda."
+                                   : "Tombol submit ujian sudah tersedia!"}
                          </p>
                     </div>
                )}
