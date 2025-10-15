@@ -80,12 +80,12 @@ export function ExamTimer({ initialTime, onTimeUp, onTimeUpdate, autoSubmit = tr
                          <Clock className="h-5 w-5 text-gray-600" />
                          <span className="font-medium text-gray-700">Waktu Tersisa</span>
                     </div>
-                    {isWarning && (
+                    {/* {isWarning && (
                          <div className="flex items-center gap-1 text-orange-600">
                               <AlertTriangle className="h-4 w-4" />
                               <span className="text-xs">Perhatian!</span>
                          </div>
-                    )}
+                    )} */}
                </div>
 
                <div className={`text-2xl font-bold ${getTimerColor()} mb-3`}>

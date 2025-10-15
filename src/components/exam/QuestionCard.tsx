@@ -146,7 +146,7 @@ export default function QuestionCard({
                                         </div>
                                    </label>
                               ))}
-
+     
 
                          </div>
                     );

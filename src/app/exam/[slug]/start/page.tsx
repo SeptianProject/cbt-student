@@ -103,7 +103,7 @@ export default function ExamStartPage() {
                <ExamSubmitModal onConfirmSubmit={confirmSubmission} examDuration={examDuration} />
 
                {/* Submit notification when available */}
-               {isSubmitAllowed && (
+               {/* {isSubmitAllowed && (
                     <div className='fixed bg-green-50 border border-green-200 p-4 rounded-lg shadow-lg top-20 right-4 z-50 max-w-sm'>
                          <div className="flex items-center gap-2 text-green-800">
                               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -113,7 +113,7 @@ export default function ExamStartPage() {
                               Anda sudah dapat menyelesaikan ujian sekarang.
                          </p>
                     </div>
-               )}
+               )} */}
 
           </ProtectedRoute>
      );
