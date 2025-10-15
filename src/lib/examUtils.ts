@@ -277,31 +277,52 @@ export const parseExamSlug = (slug: string): string => {
 
 /**
  * Calculate score for multiple choice complex questions
- * Formula: (total_points / correct_answers_count) * correct_selected_answers
  * 
- * @param totalPoints - Total points for the question
- * @param correctAnswers - Array of correct answer keys (e.g., ["A", "C"])
- * @param selectedAnswers - Array of student selected answers (e.g., ["A", "B", "C"])
+ * Sistem Penilaian:
+ * - Hanya jawaban yang BENAR yang dihitung
+ * - Jawaban salah TIDAK mengurangi poin
+ * - Menggunakan poin TETAP per jawaban benar (default: 1.5 poin)
+ * 
+ * Contoh dengan poin tetap 1.5 per jawaban:
+ * - Ada 2 jawaban benar (A, C)
+ * - Poin per jawaban benar = 1.5 (tetap)
+ * 
+ * Skenario:
+ * 1. Siswa pilih [A, C] (2 benar) → 1.5 + 1.5 = 3.0 poin ✓
+ * 2. Siswa pilih [A] (1 benar) → 1.5 poin ✓
+ * 3. Siswa pilih [A, B, C] (2 benar, 1 salah) → 1.5 + 1.5 = 3.0 poin ✓
+ * 4. Siswa pilih [B] (0 benar) → 0 poin ✗
+ * 5. Siswa pilih [A, B, D] (1 benar, 2 salah) → 1.5 poin ✓
+ * 
+ * @param totalPoints - Total points from backend (ignored if useFixedPoint = true)
+ * @param correctAnswers - Array of correct answer keys (contoh: ["A", "C"])
+ * @param selectedAnswers - Array of student selected answers (contoh: ["A", "B", "C"])
+ * @param useFixedPointPerAnswer - Use fixed 1.5 points per correct answer (default: true)
  * @returns Calculated score for the question
  */
 export const calculateComplexMultipleChoiceScore = (
      totalPoints: number,
      correctAnswers: string[],
-     selectedAnswers: string[]
+     selectedAnswers: string[],
+     useFixedPointPerAnswer: boolean = true
 ): number => {
      if (!correctAnswers || correctAnswers.length === 0) {
           return 0;
      }
 
+     const FIXED_POINT_PER_ANSWER = 1.5;
+
      // Calculate points per correct answer
-     const pointsPerCorrectAnswer = totalPoints / correctAnswers.length;
+     const pointsPerCorrectAnswer = useFixedPointPerAnswer
+          ? FIXED_POINT_PER_ANSWER
+          : (totalPoints / correctAnswers.length);
 
      // Count how many correct answers were selected
      const correctSelectedCount = selectedAnswers.filter(answer =>
           correctAnswers.includes(answer)
      ).length;
 
-     // Calculate final score
+     // Calculate final score (only count correct answers)
      const score = pointsPerCorrectAnswer * correctSelectedCount;
 
      return Math.round(score * 100) / 100; // Round to 2 decimal places
@@ -310,23 +331,45 @@ export const calculateComplexMultipleChoiceScore = (
 /**
  * Get scoring information for a complex multiple choice question
  * 
- * @param totalPoints - Total points for the question
- * @param correctAnswers - Array of correct answer keys
- * @returns Scoring information object
+ * Sistem Penilaian Khusus untuk Pilihan Ganda Kompleks:
+ * - Setiap jawaban benar mendapat poin TETAP (default: 1.5 poin)
+ * - Total poin = jumlah jawaban benar × poin per jawaban
+ * - Jika backend mengirim poin tinggi (misal 15), kita gunakan sistem poin tetap
+ * 
+ * @param totalPoints - Total points from backend (might be high like 15)
+ * @param correctAnswers - Array of correct answer keys (contoh: ["A", "C"])
+ * @param useFixedPointPerAnswer - Use fixed 1.5 points per correct answer (default: true)
+ * @returns Scoring information object with detailed explanation
  */
 export const getComplexMultipleChoiceInfo = (
      totalPoints: number,
-     correctAnswers: string[]
+     correctAnswers: string[],
+     useFixedPointPerAnswer: boolean = true
 ) => {
-     const pointsPerAnswer = correctAnswers.length > 0
-          ? Math.round((totalPoints / correctAnswers.length) * 100) / 100
-          : 0;
+     const FIXED_POINT_PER_ANSWER = 1.5; // Poin tetap per jawaban benar
+     const totalCorrectAnswers = correctAnswers.length;
+
+     let pointsPerAnswer: number;
+     let actualTotalPoints: number;
+
+     if (useFixedPointPerAnswer) {
+          // Gunakan poin tetap 1.5 per jawaban benar
+          pointsPerAnswer = FIXED_POINT_PER_ANSWER;
+          actualTotalPoints = FIXED_POINT_PER_ANSWER * totalCorrectAnswers;
+     } else {
+          // Gunakan sistem pembagian dari backend
+          pointsPerAnswer = totalCorrectAnswers > 0
+               ? Math.round((totalPoints / totalCorrectAnswers) * 100) / 100
+               : 0;
+          actualTotalPoints = totalPoints;
+     }
 
      return {
-          totalPoints,
-          correctAnswersCount: correctAnswers.length,
+          totalPoints: actualTotalPoints,
+          correctAnswersCount: totalCorrectAnswers,
           pointsPerAnswer,
-          description: `Setiap jawaban benar bernilai ${pointsPerAnswer} poin (${totalPoints} ÷ ${correctAnswers.length} = ${pointsPerAnswer})`
+          description: `Terdapat ${totalCorrectAnswers} jawaban benar. Setiap jawaban benar bernilai ${pointsPerAnswer} poin. Poin maksimal: ${actualTotalPoints}`,
+          scoringNote: `Hanya jawaban yang benar yang dihitung. Jawaban salah tidak mengurangi poin.`
      };
 };
 
