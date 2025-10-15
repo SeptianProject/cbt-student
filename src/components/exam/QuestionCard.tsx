@@ -124,30 +124,7 @@ export default function QuestionCard({
                                    <p className="text-sm text-gray-600 mb-2">
                                         <strong>Pilih semua jawaban yang benar (bisa lebih dari satu):</strong>
                                    </p>
-                                   {complexChoiceInfo && (
-                                        <div className="flex items-start gap-2 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200 shadow-sm">
-                                             <Info className="h-5 w-5 mt-0.5 flex-shrink-0 text-blue-600" />
-                                             <div className="flex-1">
-                                                  <p className="font-bold text-blue-800 mb-2 text-sm">📊 Sistem Penilaian:</p>
-                                                  <div className="space-y-1.5 text-gray-700">
-                                                       <p className="leading-relaxed">
-                                                            {complexChoiceInfo.description}
-                                                       </p>
-                                                       <p className="text-blue-700 font-medium bg-white/60 px-2 py-1 rounded">
-                                                            💡 {complexChoiceInfo.scoringNote}
-                                                       </p>
-                                                       <div className="mt-2 pt-2 border-t border-blue-200">
-                                                            <p className="font-semibold text-gray-800 mb-1">Contoh Perhitungan:</p>
-                                                            <ul className="space-y-1 text-xs">
-                                                                 <li>• Pilih 1 jawaban benar → {complexChoiceInfo.pointsPerAnswer} poin</li>
-                                                                 <li>• Pilih 2 jawaban benar → {complexChoiceInfo.totalPoints} poin (maksimal)</li>
-                                                                 <li>• Pilih 3 jawaban (1 benar, 2 salah) → {complexChoiceInfo.pointsPerAnswer} poin</li>
-                                                            </ul>
-                                                       </div>
-                                                  </div>
-                                             </div>
-                                        </div>
-                                   )}
+
                               </div>
                               {Object.entries(question.choices).map(([key, value]) => (
                                    <label
@@ -170,33 +147,7 @@ export default function QuestionCard({
                                    </label>
                               ))}
 
-                              {selectedAnswers.length > 0 && (
-                                   <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
-                                        <p className="text-sm font-semibold text-gray-800 mb-2">
-                                             ✓ Jawaban yang dipilih:
-                                        </p>
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                             {selectedAnswers.map(answer => (
-                                                  <span
-                                                       key={answer}
-                                                       className="px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors"
-                                                  >
-                                                       {answer}
-                                                  </span>
-                                             ))}
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs bg-white/70 px-3 py-2 rounded-md">
-                                             <span className="text-gray-600">
-                                                  Total pilihan: <strong className="text-gray-800">{selectedAnswers.length}</strong>
-                                             </span>
-                                             {complexChoiceInfo && (
-                                                  <span className="text-blue-700 font-medium">
-                                                       Poin per jawaban benar: <strong>{complexChoiceInfo.pointsPerAnswer}</strong>
-                                                  </span>
-                                             )}
-                                        </div>
-                                   </div>
-                              )}
+
                          </div>
                     );
 

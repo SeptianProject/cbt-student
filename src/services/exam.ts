@@ -25,8 +25,9 @@ export const examService = {
                console.log('Error clearing session (might be expected):', error);
                // Ignore errors - session might already be expired or invalid
           } finally {
-               // Always clear local session token
+               // Always clear local session data
                localStorage.removeItem('session_token');
+               localStorage.removeItem('session_id');
           }
      },
 
@@ -42,11 +43,19 @@ export const examService = {
                     }
                });
 
-               // Store session_token if provided in response
-               if (response.data && typeof response.data === 'object' && 'session_token' in response.data) {
-                    const responseWithToken = response.data as { session_token?: string };
-                    if (responseWithToken.session_token) {
-                         localStorage.setItem('session_token', responseWithToken.session_token);
+               // Store session_token and session_id if provided in response
+               if (response.data && typeof response.data === 'object') {
+                    if ('session_token' in response.data) {
+                         const responseWithToken = response.data as { session_token?: string };
+                         if (responseWithToken.session_token) {
+                              localStorage.setItem('session_token', responseWithToken.session_token);
+                         }
+                    }
+                    if ('session_id' in response.data) {
+                         const responseWithSessionId = response.data as { session_id?: number };
+                         if (responseWithSessionId.session_id) {
+                              localStorage.setItem('session_id', responseWithSessionId.session_id.toString());
+                         }
                     }
                }
 
@@ -71,11 +80,19 @@ export const examService = {
                          }
                     });
 
-                    // Store session_token if provided in response
-                    if (retryResponse.data && typeof retryResponse.data === 'object' && 'session_token' in retryResponse.data) {
-                         const responseWithToken = retryResponse.data as { session_token?: string };
-                         if (responseWithToken.session_token) {
-                              localStorage.setItem('session_token', responseWithToken.session_token);
+                    // Store session_token and session_id if provided in response
+                    if (retryResponse.data && typeof retryResponse.data === 'object') {
+                         if ('session_token' in retryResponse.data) {
+                              const responseWithToken = retryResponse.data as { session_token?: string };
+                              if (responseWithToken.session_token) {
+                                   localStorage.setItem('session_token', responseWithToken.session_token);
+                              }
+                         }
+                         if ('session_id' in retryResponse.data) {
+                              const responseWithSessionId = retryResponse.data as { session_id?: number };
+                              if (responseWithSessionId.session_id) {
+                                   localStorage.setItem('session_id', responseWithSessionId.session_id.toString());
+                              }
                          }
                     }
 
@@ -238,6 +255,7 @@ export const examService = {
                // Clean up session token on successful submit if final submit
                if (options.finalSubmit) {
                     localStorage.removeItem('session_token');
+                    localStorage.removeItem('session_id');
                }
 
                return response.data;
@@ -294,8 +312,27 @@ export const examService = {
           return response.data;
      },
 
-     saveAnswer: async (examId: number, questionId: number, answer: StudentAnswer) => {
-          const response = await api.post(`/siswa/exams/${examId}/questions/${questionId}/answer`, answer, {
+     updateAnswer: async (sessionId: number, questionId: number, answer: string | string[], type: 'choice' | 'essay') => {
+          const sessionToken = localStorage.getItem('session_token');
+
+          if (!sessionToken) {
+               throw new Error('Session token tidak ditemukan.');
+          }
+
+          // Format answer based on type
+          let formattedAnswer: string;
+          if (type === 'choice') {
+               formattedAnswer = Array.isArray(answer) ? answer.join(',') : String(answer);
+          } else {
+               formattedAnswer = Array.isArray(answer) ? answer.join(', ') : String(answer);
+          }
+
+          const response = await api.post('/siswa/exam-session/update-answer', {
+               session_id: sessionId,
+               question_id: questionId,
+               answer: formattedAnswer,
+               type: type
+          }, {
                headers: {
                     Authorization: `Bearer ${localStorage.getItem('api_token')}`
                }
@@ -330,6 +367,7 @@ export const examService = {
 
           // Always clear local storage
           localStorage.removeItem('session_token');
+          localStorage.removeItem('session_id');
           localStorage.removeItem('exam_result');
           localStorage.removeItem('current_exam_slug');
      },

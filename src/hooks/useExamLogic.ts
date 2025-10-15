@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchExam, setAnswers, setFlag, setShowSubmitModal, submitExam, resetExamState } from '@/store/examSlice';
 import { getCurrentUser } from '@/store/authSlice';
 import { validateAnswers } from '@/lib/examUtils';
+import { useAutoSaveAnswer } from './useAutoSaveAnswer';
 
 export const useExamLogic = () => {
      const router = useRouter();
@@ -24,10 +25,21 @@ export const useExamLogic = () => {
           showSubmitModal,
           isExamEnded,
           isSubmitting,
+          sessionId,
+          sessionStatus,
      } = useAppSelector((state) => state.exam);
 
      const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
      const [isSubmitAllowed, setIsSubmitAllowed] = useState(false);
+
+     // Auto-save answers
+     useAutoSaveAnswer({
+          sessionId,
+          answers,
+          questions,
+          enabled: sessionStatus === 'progress' && !isExamEnded,
+          debounceMs: 1500
+     });
 
      // Reset exam state when slug changes (navigating between exams)
      useEffect(() => {
@@ -51,6 +63,7 @@ export const useExamLogic = () => {
                setTimeout(() => {
                     // Clear current exam data
                     localStorage.removeItem('session_token');
+                    localStorage.removeItem('session_id');
                     localStorage.removeItem('exam_result');
                     localStorage.removeItem('current_exam_slug');
 

@@ -97,7 +97,7 @@ export const useExamSession = ({ examId, checkInterval = 30000, enabled = true }
           error,
           checkSessionStatus,
           isSessionValid: sessionStatus?.status === 'progress' && !sessionStatus?.is_expired,
-          isSessionExpired: sessionStatus?.is_expired || sessionStatus?.status === 'completed' || sessionStatus?.status === 'auto_submitted',
+          isSessionExpired: sessionStatus?.is_expired || sessionStatus?.status === 'submitted' || sessionStatus?.status === 'expired' || sessionStatus?.status === 'cancelled',
           timeRemaining: sessionStatus?.time_remaining || 0,
      };
 };

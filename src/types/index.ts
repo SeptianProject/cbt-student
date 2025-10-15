@@ -81,7 +81,7 @@ export interface ExamSession {
      start_time: string;
      end_time?: string;
      remaining_time: number; // in seconds
-     status: 'active' | 'completed' | 'expired';
+     status: 'progress' | 'submitted' | 'expired' | 'cancelled';
 }
 
 export interface StudentAnswer {
@@ -99,6 +99,8 @@ export interface DashboardExam {
 export interface Exam {
      success: boolean;
      exam: Question[];
+     session_token?: string;
+     session_id?: number;
 }
 
 export interface ExamData {
@@ -174,7 +176,7 @@ export interface SessionStatus {
      success: boolean;
      data: {
           session_id: number;
-          status: 'progress' | 'completed' | 'expired' | 'auto_submitted';
+          status: 'progress' | 'submitted' | 'expired' | 'cancelled';
           time_remaining: number;
           started_at: string;
           end_time: string;

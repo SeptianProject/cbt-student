@@ -18,6 +18,9 @@ interface ExamState {
      showSubmitModal: boolean;
      isExamEnded: boolean;
      isSubmitting: boolean;
+     sessionId: number | null;
+     sessionToken: string | null;
+     sessionStatus: 'progress' | 'submitted' | 'expired' | 'cancelled' | null;
      submitResult: {
           session_id?: number;
           exam_title?: string;
@@ -45,6 +48,9 @@ const initialState: ExamState = {
      showSubmitModal: false,
      isExamEnded: false,
      isSubmitting: false,
+     sessionId: null,
+     sessionToken: null,
+     sessionStatus: null,
      submitResult: null,
 };
 
@@ -126,6 +132,11 @@ const examSlice = createSlice({
                if (state.currentExam?.exam_id) {
                     clearRandomizationData(state.currentExam.exam_id);
                }
+               // Clear session data from localStorage
+               if (typeof window !== 'undefined') {
+                    localStorage.removeItem('session_token');
+                    localStorage.removeItem('session_id');
+               }
                return initialState;
           },
           setSubmitResult(state: Draft<ExamState>, action: PayloadAction<ExamState['submitResult']>) {
@@ -145,13 +156,22 @@ const examSlice = createSlice({
                          state: Draft<ExamState>,
                          action: PayloadAction<{
                               exam: AssignedExam;
-                              examData: { exam: unknown; success: boolean };
+                              examData: { exam: unknown; success: boolean; session_token?: string; session_id?: number };
                               userId: number;
                          }>
                     ) => {
 
 
                          state.currentExam = action.payload.exam;
+
+                         // Store session data if available
+                         if (action.payload.examData.session_token) {
+                              state.sessionToken = action.payload.examData.session_token;
+                         }
+                         if (action.payload.examData.session_id) {
+                              state.sessionId = action.payload.examData.session_id;
+                         }
+                         state.sessionStatus = 'progress';
 
                          // Parse questions dalam urutan original
                          const parsedQuestions = parseExamQuestions(action.payload.examData.exam as Question[]);
@@ -209,6 +229,7 @@ const examSlice = createSlice({
                     state.isSubmitting = false;
                     state.isExamEnded = true;
                     state.showSubmitModal = false;
+                    state.sessionStatus = 'submitted';
 
                     // Store submit result if available - payload contains full response with data field
                     if (action.payload?.data) {
@@ -256,8 +277,9 @@ const examSlice = createSlice({
 
                          localStorage.setItem('exam_statuses', JSON.stringify(updatedStatuses));
 
-                         // Clear session token after successful submission
+                         // Clear session data after successful submission
                          localStorage.removeItem('session_token');
+                         localStorage.removeItem('session_id');
                     }
                })
                .addCase(submitExam.rejected, (state: Draft<ExamState>, action: { error: { message?: string } }) => {
