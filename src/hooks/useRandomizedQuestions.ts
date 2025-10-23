@@ -24,13 +24,13 @@ export const useRandomizedQuestions = () => {
 
           return {
                getRandomizedIndex: (originalIndex: number) => {
-                    return randomizationData.originalToRandomizedMap.get(originalIndex) ?? originalIndex;
+                    return randomizationData.originalToRandomizedMap[originalIndex] ?? originalIndex;
                },
                getOriginalIndex: (randomizedIndex: number) => {
-                    return randomizationData.randomizedToOriginalMap.get(randomizedIndex) ?? randomizedIndex;
+                    return randomizationData.randomizedToOriginalMap[randomizedIndex] ?? randomizedIndex;
                },
                getQuestionByOriginalIndex: (originalIndex: number) => {
-                    const randomizedIndex = randomizationData.originalToRandomizedMap.get(originalIndex);
+                    const randomizedIndex = randomizationData.originalToRandomizedMap[originalIndex];
                     return randomizedIndex !== undefined ? questions[randomizedIndex] : originalQuestions[originalIndex];
                },
                getQuestionByRandomizedIndex: (randomizedIndex: number) => {

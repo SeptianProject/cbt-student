@@ -3,7 +3,7 @@
 import { ParsedQuestion, StudentAnswer } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Flag, FlagOff, Info } from 'lucide-react';
+import { Flag, FlagOff, } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getComplexMultipleChoiceInfo } from '@/lib/examUtils';
 
@@ -47,7 +47,7 @@ export default function QuestionCard({
                }
                setIsFlagged(currentAnswer.is_flagged || false);
           }
-     }, [currentAnswer, question.id, question.question_type_id]); // Tambahkan question.id sebagai dependency
+     }, [currentAnswer, question.id, question.question_type_id]);
 
      const handleSingleChoice = (optionKey: string) => {
           const newSelectedAnswers = [optionKey];
@@ -74,13 +74,6 @@ export default function QuestionCard({
           setIsFlagged(newFlagState);
           onFlagToggle(question.id, newFlagState);
      };
-
-     // Get scoring info for complex multiple choice (type '1')
-     const complexChoiceInfo = question.question_type_id === '1'
-          ? getComplexMultipleChoiceInfo(question.points, question.answer_key)
-          : null;
-
-
 
      const renderQuestionType = () => {
           switch (question.question_type_id) {
@@ -146,7 +139,7 @@ export default function QuestionCard({
                                         </div>
                                    </label>
                               ))}
-     
+
 
                          </div>
                     );

@@ -7,6 +7,7 @@ import { fetchExam, setAnswers, setFlag, setShowSubmitModal, submitExam, resetEx
 import { getCurrentUser } from '@/store/authSlice';
 import { validateAnswers } from '@/lib/examUtils';
 import { useAutoSaveAnswer } from './useAutoSaveAnswer';
+import { useEnsureSessionId } from './useEnsureSessionId';
 
 export const useExamLogic = () => {
      const router = useRouter();
@@ -32,13 +33,16 @@ export const useExamLogic = () => {
      const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
      const [isSubmitAllowed, setIsSubmitAllowed] = useState(false);
 
-     // Auto-save answers
-     useAutoSaveAnswer({
+     // Ensure session ID is always available
+     useEnsureSessionId();
+
+     // Auto-save answers with status tracking
+     const { isSaving, lastSavedTime, saveError } = useAutoSaveAnswer({
           sessionId,
           answers,
           questions,
           enabled: sessionStatus === 'progress' && !isExamEnded,
-          debounceMs: 1500
+          debounceMs: 500 // Faster debounce for better UX
      });
 
      // Reset exam state when slug changes (navigating between exams)
@@ -205,6 +209,10 @@ export const useExamLogic = () => {
           showSessionExpired: false, // Always false for now
           isSessionValid: true, // Always true for now (no session monitoring)
           isSubmitAllowed,
+          // Auto-save status
+          isSaving,
+          lastSavedTime,
+          saveError,
 
           // Handlers
           handleAnswerChange,

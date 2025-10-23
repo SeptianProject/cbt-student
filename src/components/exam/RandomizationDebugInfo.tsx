@@ -29,8 +29,14 @@ export const RandomizationDebugInfo: React.FC = () => {
           totalOriginalQuestions: randomizedQuestions.originalQuestions.length,
           sampleMapping: randomizationData ?
                Object.fromEntries(
-                    Array.from(randomizationData.originalToRandomizedMap.entries()).slice(0, 5)
-                         .map(([orig, rand]: [number, number]) => [`Q${orig + 1}`, `Q${rand + 1}`])
+                    // originalToRandomizedMap is a plain object (Record<number, number>)
+                    Object.entries(randomizationData.originalToRandomizedMap)
+                         .slice(0, 5)
+                         .map(([origStr, randStr]) => {
+                              const orig = Number(origStr);
+                              const rand = Number(randStr);
+                              return [`Q${orig + 1}`, `Q${rand + 1}`];
+                         })
                ) : null
      };
 

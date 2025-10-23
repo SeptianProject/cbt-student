@@ -316,6 +316,7 @@ export const examService = {
           const sessionToken = localStorage.getItem('session_token');
 
           if (!sessionToken) {
+               console.error('❌ Session token not found in updateAnswer');
                throw new Error('Session token tidak ditemukan.');
           }
 
@@ -327,18 +328,35 @@ export const examService = {
                formattedAnswer = Array.isArray(answer) ? answer.join(', ') : String(answer);
           }
 
-          const response = await api.post('/siswa/exam-session/update-answer', {
+          const payload = {
                session_id: sessionId,
                question_id: questionId,
                answer: formattedAnswer,
                type: type
-          }, {
-               headers: {
-                    Authorization: `Bearer ${localStorage.getItem('api_token')}`
-               }
-          });
+          };
 
-          return response.data;
+          console.log('📡 Sending update-answer request:', payload);
+
+          try {
+               const response = await api.post('/siswa/exam-session/update-answer', payload, {
+                    headers: {
+                         Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                    }
+               });
+
+               console.log('✅ Update-answer response:', response.data);
+               return response.data;
+          } catch (error) {
+               console.error('❌ Update-answer failed:', error);
+               if (error && typeof error === 'object' && 'response' in error) {
+                    const axiosError = error as { response?: { status?: number; data?: unknown } };
+                    console.error('Error response:', {
+                         status: axiosError.response?.status,
+                         data: axiosError.response?.data
+                    });
+               }
+               throw error;
+          }
      },
 
      // Force end any existing session for an exam

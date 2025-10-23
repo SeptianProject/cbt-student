@@ -3,15 +3,24 @@
 import { Student, AssignedExam } from '@/types'
 import Image from 'next/image'
 import React from 'react'
+import { SaveStatusIndicator } from './SaveStatusIndicator'
 
 interface ExamHeaderProps {
      userData?: {
           student: Student;
           assigned: AssignedExam[];
      }
+     isSaving?: boolean;
+     lastSavedTime?: Date | null;
+     saveError?: string | null;
 }
 
-const ExamHeader: React.FC<ExamHeaderProps> = ({ userData }) => {
+const ExamHeader: React.FC<ExamHeaderProps> = ({
+     userData,
+     isSaving = false,
+     lastSavedTime = null,
+     saveError = null
+}) => {
      const examId = localStorage.getItem('exam_id')
 
      // Cari data exam yang sesuai dengan exam_id yang disimpan
@@ -42,16 +51,24 @@ const ExamHeader: React.FC<ExamHeaderProps> = ({ userData }) => {
                </div>
                {/* Right */}
                <div className='flex items-center gap-5'>
-                    {currentExam && (
-                         <div className='flex flex-col text-right'>
-                              <h4 className='font-semibold text-lg text-[#404040]'>
-                                   {currentExam.title}
-                              </h4>
-                              <p className='text-sm text-[#404040]'>
-                                   {currentExam.duration} menit • {currentExam.total_quest} soal
-                              </p>
-                         </div>
-                    )}
+                    <div className='flex flex-col items-end gap-2'>
+                         {currentExam && (
+                              <div className='flex flex-col text-right'>
+                                   <h4 className='font-semibold text-lg text-[#404040]'>
+                                        {currentExam.title}
+                                   </h4>
+                                   <p className='text-sm text-[#404040]'>
+                                        {currentExam.duration} menit • {currentExam.total_quest} soal
+                                   </p>
+                              </div>
+                         )}
+                         {/* Save Status Indicator */}
+                         <SaveStatusIndicator
+                              isSaving={isSaving}
+                              lastSavedTime={lastSavedTime}
+                              saveError={saveError}
+                         />
+                    </div>
                     {/* <button onClick={handleLogoutClick} className='cursor-pointer'>
                                              <RxDashboard className='w-8 h-8 text-[#404040]' />
                                         </button> */}

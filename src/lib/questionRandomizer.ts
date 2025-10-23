@@ -44,9 +44,9 @@ const shuffleArray = <T>(array: T[], rng: SeededRandom): T[] => {
 // Interface untuk question randomizer result
 export interface RandomizedQuestionResult {
      questions: ParsedQuestion[];
-     originalToRandomizedMap: Map<number, number>; // original index -> randomized index
-     randomizedToOriginalMap: Map<number, number>; // randomized index -> original index
-     questionIdToRandomizedIndexMap: Map<number, number>; // question ID -> randomized index
+     originalToRandomizedMap: Record<number, number>; // original index -> randomized index
+     randomizedToOriginalMap: Record<number, number>; // randomized index -> original index
+     questionIdToRandomizedIndexMap: Record<number, number>; // question ID -> randomized index
      seed: number;
 }
 
@@ -65,9 +65,9 @@ export const randomizeQuestions = (
      if (!questions || questions.length === 0) {
           return {
                questions: [],
-               originalToRandomizedMap: new Map(),
-               randomizedToOriginalMap: new Map(),
-               questionIdToRandomizedIndexMap: new Map(),
+               originalToRandomizedMap: {},
+               randomizedToOriginalMap: {},
+               questionIdToRandomizedIndexMap: {},
                seed: 0
           };
      }
@@ -81,17 +81,17 @@ export const randomizeQuestions = (
      // Shuffle questions
      const shuffledQuestions = shuffleArray(questions, rng);
 
-     // Buat mapping antara original dan randomized index
-     const originalToRandomizedMap = new Map<number, number>();
-     const randomizedToOriginalMap = new Map<number, number>();
-     const questionIdToRandomizedIndexMap = new Map<number, number>();
+     // Buat mapping antara original dan randomized index (using objects instead of Maps)
+     const originalToRandomizedMap: Record<number, number> = {};
+     const randomizedToOriginalMap: Record<number, number> = {};
+     const questionIdToRandomizedIndexMap: Record<number, number> = {};
 
      shuffledQuestions.forEach((question, randomizedIndex) => {
           const originalIndex = questions.findIndex(q => q.id === question.id);
 
-          originalToRandomizedMap.set(originalIndex, randomizedIndex);
-          randomizedToOriginalMap.set(randomizedIndex, originalIndex);
-          questionIdToRandomizedIndexMap.set(question.id, randomizedIndex);
+          originalToRandomizedMap[originalIndex] = randomizedIndex;
+          randomizedToOriginalMap[randomizedIndex] = originalIndex;
+          questionIdToRandomizedIndexMap[question.id] = randomizedIndex;
      });
 
 
@@ -128,11 +128,11 @@ export const saveRandomizationData = (result: RandomizedQuestionResult, examId: 
 
           localStorage.setItem(prefix + STORAGE_KEYS.RANDOMIZATION_SEED, result.seed.toString());
           localStorage.setItem(prefix + STORAGE_KEYS.ORIGINAL_TO_RANDOMIZED_MAP,
-               JSON.stringify(Array.from(result.originalToRandomizedMap.entries())));
+               JSON.stringify(result.originalToRandomizedMap));
           localStorage.setItem(prefix + STORAGE_KEYS.RANDOMIZED_TO_ORIGINAL_MAP,
-               JSON.stringify(Array.from(result.randomizedToOriginalMap.entries())));
+               JSON.stringify(result.randomizedToOriginalMap));
           localStorage.setItem(prefix + STORAGE_KEYS.QUESTION_ID_TO_RANDOMIZED_MAP,
-               JSON.stringify(Array.from(result.questionIdToRandomizedIndexMap.entries())));
+               JSON.stringify(result.questionIdToRandomizedIndexMap));
      } catch {
           // Silently fail - randomization will be recreated if needed
      }
@@ -155,15 +155,15 @@ export const loadRandomizationData = (examId: number): RandomizedQuestionResult 
           }
 
           const seed = parseInt(seedStr, 10);
-          const originalToRandomizedArray = JSON.parse(originalToRandomizedStr);
-          const randomizedToOriginalArray = JSON.parse(randomizedToOriginalStr);
-          const questionIdToRandomizedArray = JSON.parse(questionIdToRandomizedStr);
+          const originalToRandomizedMap = JSON.parse(originalToRandomizedStr);
+          const randomizedToOriginalMap = JSON.parse(randomizedToOriginalStr);
+          const questionIdToRandomizedIndexMap = JSON.parse(questionIdToRandomizedStr);
 
           return {
                questions: [], // Will be populated by caller
-               originalToRandomizedMap: new Map(originalToRandomizedArray),
-               randomizedToOriginalMap: new Map(randomizedToOriginalArray),
-               questionIdToRandomizedIndexMap: new Map(questionIdToRandomizedArray),
+               originalToRandomizedMap,
+               randomizedToOriginalMap,
+               questionIdToRandomizedIndexMap,
                seed
           };
      } catch {

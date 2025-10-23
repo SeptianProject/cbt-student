@@ -39,6 +39,10 @@ export default function ExamStartPage() {
           goBackToExamList,
           examDuration,
           isSubmitAllowed,
+          // Auto-save status
+          isSaving,
+          lastSavedTime,
+          saveError,
      } = useExamLogic();
 
      React.useEffect(() => {
@@ -76,7 +80,13 @@ export default function ExamStartPage() {
      return (
           <ProtectedRoute>
                <div className="min-h-screen bg-gray-50">
-                    <ExamProgressHeader onTimeUp={handleTimeUp} />                    <ExamMainContent
+                    <ExamProgressHeader
+                         onTimeUp={handleTimeUp}
+                         isSaving={isSaving}
+                         lastSavedTime={lastSavedTime}
+                         saveError={saveError}
+                    />
+                    <ExamMainContent
                          currentQuestionIndex={currentQuestionIndex}
                          currentQuestion={currentQuestion}
                          onAnswerChange={handleAnswerChange}

@@ -123,7 +123,7 @@ export default function ExamDetailPage() {
                     {confirmed &&
                          <div className='absolute top-0 left-0 w-full h-full flex items-center justify-center z-20'>
                               <div className={`w-96 h-72 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none bg-white rounded-xl shadow-lg flex flex-col items-center justify-between gap-10 z-20 p-5 py-20
-                         ${examMutation.isPending ? 'scale-0' : 'scale-100'} transition-transform duration-300`}>
+                         ${examMutation.isSuccess ? 'scale-0' : 'scale-100'} transition-transform duration-300`}>
                                    <div className=''>
                                         <p className="text-gray-600 text-center">Setelah ujian dimulai, timer akan berjalan otomatis. Pastikan koneksi internet Anda stabil. Mulai ujian sekarang?</p>
                                    </div>
@@ -131,7 +131,7 @@ export default function ExamDetailPage() {
                                         <Button
                                              variant={"default"}
                                              onClick={handleStartExam}>
-                                             Mulai Ujian
+                                             {examMutation.isPending ? 'Memulai Ujian...' : 'Mulai Ujian'}
                                         </Button>
                                         <Button
                                              variant={"outline"}
@@ -140,7 +140,7 @@ export default function ExamDetailPage() {
                                         </Button>
                                    </div>
                               </div>
-                              <div className={`bg-black w-full h-full absolute top-0 left-0 select-none ${examMutation.isPending ? 'opacity-0 pointer-events-none' : 'opacity-40'}`}></div>
+                              <div className={`bg-black w-full h-full absolute top-0 left-0 select-none ${examMutation.isSuccess ? 'opacity-0 pointer-events-none' : 'opacity-40'}`}></div>
                          </div>
                     }
                     <Content userData={userData} />
@@ -156,9 +156,8 @@ export default function ExamDetailPage() {
                               <Button
                                    className="px-8 py-3 text-lg bg-blue-600 hover:bg-blue-700"
                                    onClick={handleConfirm}
-                                   disabled={examMutation.isPending}
-                              >
-                                   {examMutation.isPending ? 'Memulai Ujian...' : 'Mulai Ujian'}
+                                   disabled={examMutation.isPending}>
+                                   Mulai Ujian
                               </Button>
                          </div>
                     )}

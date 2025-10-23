@@ -56,11 +56,24 @@ const initialState: ExamState = {
 
 export const fetchExam = createAsyncThunk(
      'exam/fetchExam',
-     async ({ assigned, slug, userId }: { assigned: AssignedExam[]; slug: string; userId: number }) => {
-          const exam = findExamBySlug(assigned, slug);
-          if (!exam) throw new Error('Exam not found');
-          const examData = await examService.examStartSafe(Number(exam.exam_id));
-          return { exam, examData, userId };
+     async ({ assigned, slug, userId }: { assigned: AssignedExam[]; slug: string; userId: number }, { rejectWithValue }) => {
+          try {
+               const exam = findExamBySlug(assigned, slug);
+               if (!exam) throw new Error('Exam not found');
+
+               // Start exam
+               const examData = await examService.examStartSafe(Number(exam.exam_id));
+
+               // Get session status to retrieve session_id
+               const sessionStatus = await examService.getSessionStatus(Number(exam.exam_id));
+
+               console.log('📊 Session status response:', sessionStatus);
+
+               return { exam, examData, sessionStatus, userId };
+          } catch (error) {
+               console.error('❌ Failed to fetch exam:', error);
+               return rejectWithValue(error);
+          }
      }
 );
 
@@ -157,6 +170,7 @@ const examSlice = createSlice({
                          action: PayloadAction<{
                               exam: AssignedExam;
                               examData: { exam: unknown; success: boolean; session_token?: string; session_id?: number };
+                              sessionStatus: { success: boolean; session_id?: number; status?: string;[key: string]: unknown };
                               userId: number;
                          }>
                     ) => {
@@ -164,14 +178,27 @@ const examSlice = createSlice({
 
                          state.currentExam = action.payload.exam;
 
-                         // Store session data if available
+                         // Store session data from examData (session_token)
                          if (action.payload.examData.session_token) {
                               state.sessionToken = action.payload.examData.session_token;
                          }
-                         if (action.payload.examData.session_id) {
+
+                         // Store session_id from sessionStatus response (prioritas lebih tinggi)
+                         if (action.payload.sessionStatus?.session_id) {
+                              state.sessionId = action.payload.sessionStatus.session_id;
+                              console.log('✅ Session ID retrieved from status:', state.sessionId);
+                         } else if (action.payload.examData.session_id) {
+                              // Fallback ke examData jika ada
                               state.sessionId = action.payload.examData.session_id;
+                              console.log('✅ Session ID retrieved from examData:', state.sessionId);
+                         } else {
+                              console.warn('⚠️ No session_id found in response');
                          }
+
+                         // When starting exam, always set status to 'progress'
+                         // Don't use status from getSessionStatus as it might show old session
                          state.sessionStatus = 'progress';
+                         console.log('✅ Session status set to progress on exam start');
 
                          // Parse questions dalam urutan original
                          const parsedQuestions = parseExamQuestions(action.payload.examData.exam as Question[]);
@@ -180,14 +207,14 @@ const examSlice = createSlice({
                          // Load existing randomization data jika ada
                          const existingRandomization = loadRandomizationData(action.payload.exam.exam_id);
 
-                         if (existingRandomization && existingRandomization.originalToRandomizedMap.size > 0) {
+                         if (existingRandomization && Object.keys(existingRandomization.originalToRandomizedMap).length > 0) {
                               // Apply existing randomization
                               const randomizedQuestions = [...parsedQuestions];
                               randomizedQuestions.sort((a, b) => {
                                    const aOriginalIndex = parsedQuestions.findIndex(q => q.id === a.id);
                                    const bOriginalIndex = parsedQuestions.findIndex(q => q.id === b.id);
-                                   const aRandomizedIndex = existingRandomization.originalToRandomizedMap.get(aOriginalIndex) ?? aOriginalIndex;
-                                   const bRandomizedIndex = existingRandomization.originalToRandomizedMap.get(bOriginalIndex) ?? bOriginalIndex;
+                                   const aRandomizedIndex = existingRandomization.originalToRandomizedMap[aOriginalIndex] ?? aOriginalIndex;
+                                   const bRandomizedIndex = existingRandomization.originalToRandomizedMap[bOriginalIndex] ?? bOriginalIndex;
                                    return aRandomizedIndex - bRandomizedIndex;
                               });
 
@@ -287,6 +314,13 @@ const examSlice = createSlice({
                     state.isError = true;
                     state.errorMessage = action.error?.message || 'Failed to submit exam';
                     // Don't set isExamEnded to true on error - keep user in exam
+               })
+               .addCase(checkSessionStatus.fulfilled, (state: Draft<ExamState>, action: PayloadAction<{ success: boolean; session_id?: number; status?: string;[key: string]: unknown }>) => {
+                    // Update session_id jika ada di response
+                    if (action.payload.session_id) {
+                         state.sessionId = action.payload.session_id;
+                         console.log('✅ Session ID updated from checkSessionStatus:', state.sessionId);
+                    }
                });
      },
 });

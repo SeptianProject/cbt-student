@@ -25,10 +25,7 @@ export default function ExamNavigation({
      totalQuestions,
      currentQuestion,
      answers,
-     questions,
      onQuestionSelect,
-     onSubmit,
-     isSubmitAllowed,
 }: ExamNavigationProps) {
      const randomizedQuestions = useRandomizedQuestions();
 
@@ -74,7 +71,7 @@ export default function ExamNavigation({
                          <div className="grid grid-cols-5 gap-2 mb-4">
                               {Array.from({ length: totalQuestions }, (_, index) => {
                                    const questionNumber = index + 1;
-                                   const status = getQuestionStatus(questionNumber); // Hapus questionId parameter
+                                   const status = getQuestionStatus(questionNumber);
                                    const isCurrentQuestion = questionNumber === currentQuestion;
 
                                    return (
@@ -139,32 +136,6 @@ export default function ExamNavigation({
                               </div>
                          </div>
                     </Card>
-
-                    {/* Submit Exam Button */}
-                    <Card className="p-4">
-                         <div className="space-y-2">
-                              <h4 className="font-medium text-gray-800 text-sm">Selesai Ujian</h4>
-                              <Button
-                                   onClick={onSubmit}
-                                   disabled={!isSubmitAllowed}
-                                   className={`w-full text-sm ${isSubmitAllowed
-                                        ? 'bg-red-500 hover:bg-red-600 text-white'
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                   size="sm"
-                              >
-                                   {isSubmitAllowed ? 'Submit Ujian' : 'Submit (15 menit sebelum selesai)'}
-                              </Button>
-                              {!isSubmitAllowed && (
-                                   <p className="text-xs text-gray-600 mt-1">
-                                        Tombol submit akan aktif 15 menit sebelum waktu ujian habis
-                                   </p>
-                              )}
-                         </div>
-                    </Card>
-
-                    {/* Navigation Controls */}
-
                </div>
 
           </div>
