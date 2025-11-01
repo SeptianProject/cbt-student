@@ -1,7 +1,5 @@
 'use client'
 
-import { authService } from '@/services/auth'
-import { useQuery } from '@tanstack/react-query'
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { User, GraduationCap, MapPin, Calendar, School, IdCard, ArrowRight } from 'lucide-react'
@@ -9,16 +7,19 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useExamFlow } from '@/hooks/useExamFlow'
 import { createExamSlug } from '@/lib/examUtils'
+import { useCurrentUser } from '@/hooks/useAuthQuery'
+import { useAppSelector } from '@/store/hooks'
 
 const DashboardPage = () => {
   const router = useRouter()
   const [isCheckingNextExam, setIsCheckingNextExam] = useState(false)
   const [nextExamFound, setNextExamFound] = useState(false)
 
-  const { data: userData, isLoading, error } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => authService.getCurrentUser()
-  })
+  // Redux state untuk auth
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+
+  // React Query untuk fetch dashboard data
+  const { data: userData, isLoading, error } = useCurrentUser(isAuthenticated)
 
   const { findNextExam, areAllExamsCompleted } = useExamFlow()
 

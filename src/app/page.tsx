@@ -3,27 +3,32 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { authService } from "@/services/auth";
 import { loginSchema, LoginFormData } from "@/lib/validations/auth";
-import { useMutation } from "@tanstack/react-query";
+import { useLoginMutation } from "@/hooks/useAuthQuery";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect } from "react";
+import { useAppSelector } from "@/store/hooks";
 
 export default function LoginPage() {
   const router = useRouter()
-  const [loginError, setLoginError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+
+  // Redux state untuk check auth
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+
+  // React Query mutation untuk login
+  const loginMutation = useLoginMutation()
 
   useEffect(() => {
     setMounted(true)
 
-    const token = localStorage.getItem('api_token')
-    if (token) {
-      router.push('/exam')
+    // Redirect jika sudah authenticated
+    if (isAuthenticated) {
+      router.push('/dashboard')
     }
-  }, [router])
+  }, [router, isAuthenticated])
 
   const {
     register,
@@ -31,19 +36,6 @@ export default function LoginPage() {
     formState: { errors, isSubmitting }
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema)
-  })
-
-  const loginMutation = useMutation({
-    mutationFn: (data: LoginFormData) => authService.login(data.email, data.password),
-    onSuccess: () => {
-      setLoginError(null)
-      router.push('/dashboard')
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      console.error('Login error:', error)
-      const errorMessage = error.response?.data?.message || error.message || 'Login gagal. Silakan coba lagi.'
-      setLoginError(errorMessage)
-    }
   })
 
   const onSubmit = async (data: LoginFormData) => {
@@ -89,10 +81,10 @@ export default function LoginPage() {
               )}
             </div>
 
-            {loginError && (
+            {loginMutation.isError && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  {loginError}
+                  {loginMutation.error?.message || 'Login gagal. Silakan coba lagi.'}
                 </AlertDescription>
               </Alert>
             )}
