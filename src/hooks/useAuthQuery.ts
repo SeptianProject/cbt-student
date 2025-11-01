@@ -65,6 +65,7 @@ export const useCurrentUser = (enabled: boolean = true) => {
           queryKey: authKeys.currentUser(),
           queryFn: () => authService.getCurrentUser(),
           enabled, // Only fetch when enabled (e.g., when user is authenticated)
-          staleTime: 1000 * 60 * 5, // 5 minutes
+          staleTime: 0, // Always fetch fresh data to ensure latest assigned exams
+          refetchOnMount: 'always', // Always refetch when component mounts
      });
 };

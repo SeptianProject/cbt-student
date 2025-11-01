@@ -34,6 +34,7 @@ export default function ExamStartPage() {
           goToNext,
           handleSubmitExam,
           handleTimeUp,
+          handleTimeUpdate,
           confirmSubmission,
           retryFetchExam,
           goBackToExamList,
@@ -82,6 +83,7 @@ export default function ExamStartPage() {
                <div className="min-h-screen bg-gray-50">
                     <ExamProgressHeader
                          onTimeUp={handleTimeUp}
+                         onTimeUpdate={handleTimeUpdate}
                          isSaving={isSaving}
                          lastSavedTime={lastSavedTime}
                          saveError={saveError}

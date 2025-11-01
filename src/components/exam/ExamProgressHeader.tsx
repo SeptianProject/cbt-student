@@ -8,6 +8,7 @@ import { useAppSelector } from '@/store/hooks';
 
 interface ExamProgressHeaderProps {
      onTimeUp: () => void;
+     onTimeUpdate?: (timeLeft: number) => void;
      isSaving?: boolean;
      lastSavedTime?: Date | null;
      saveError?: string | null;
@@ -15,6 +16,7 @@ interface ExamProgressHeaderProps {
 
 export const ExamProgressHeader: React.FC<ExamProgressHeaderProps> = ({
      onTimeUp,
+     onTimeUpdate,
      isSaving = false,
      lastSavedTime = null,
      saveError = null
@@ -47,6 +49,7 @@ export const ExamProgressHeader: React.FC<ExamProgressHeaderProps> = ({
                               <ExamTimer
                                    initialTime={examDuration}
                                    onTimeUp={onTimeUp}
+                                   onTimeUpdate={onTimeUpdate}
                                    autoSubmit={true}
                               />
                          </div>

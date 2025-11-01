@@ -24,6 +24,8 @@ export default function ExamDetailPage() {
      const { data: userData } = useQuery({
           queryKey: ['currentUser'],
           queryFn: () => authService.getCurrentUser(),
+          staleTime: 0, // Always fetch fresh data
+          refetchOnMount: 'always', // Always refetch when component mounts
      })
 
      React.useEffect(() => {

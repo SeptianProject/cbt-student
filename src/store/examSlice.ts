@@ -15,6 +15,7 @@ interface ExamState {
      isError: boolean;
      errorMessage: string | null;
      examDuration: number;
+     timeRemaining: number; // Track remaining time in seconds
      showSubmitModal: boolean;
      isExamEnded: boolean;
      isSubmitting: boolean;
@@ -45,6 +46,7 @@ const initialState: ExamState = {
      isError: false,
      errorMessage: null,
      examDuration: 0,
+     timeRemaining: 0,
      showSubmitModal: false,
      isExamEnded: false,
      isSubmitting: false,
@@ -133,6 +135,9 @@ const examSlice = createSlice({
                     // Update flag status saja, pertahankan answer yang sudah ada
                     state.answers[questionId].is_flagged = isFlagged;
                }
+          },
+          setTimeRemaining(state: Draft<ExamState>, action: PayloadAction<number>) {
+               state.timeRemaining = action.payload;
           },
           setShowSubmitModal(state: Draft<ExamState>, action: PayloadAction<boolean>) {
                state.showSubmitModal = action.payload;
@@ -239,6 +244,7 @@ const examSlice = createSlice({
                          }
 
                          state.examDuration = (action.payload.exam.duration || 120) * 60;
+                         state.timeRemaining = state.examDuration; // Initialize timeRemaining
                          state.isLoading = false;
                     }
                )
@@ -328,6 +334,7 @@ const examSlice = createSlice({
 export const {
      setAnswers,
      setFlag,
+     setTimeRemaining,
      setShowSubmitModal,
      setIsExamEnded,
      resetExamState,

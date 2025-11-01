@@ -13,7 +13,9 @@ const ExamPage = () => {
 
      const { data: userData, isError, isLoading } = useQuery({
           queryKey: ['currentUser'],
-          queryFn: authService.getCurrentUser
+          queryFn: authService.getCurrentUser,
+          staleTime: 0, // Always fetch fresh data
+          refetchOnMount: 'always', // Always refetch when component mounts
      })
 
      useEffect(() => {

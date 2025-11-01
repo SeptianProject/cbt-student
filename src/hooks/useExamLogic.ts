@@ -3,17 +3,19 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchExam, setAnswers, setFlag, setShowSubmitModal, submitExam, resetExamState } from '@/store/examSlice';
+import { fetchExam, setAnswers, setFlag, setShowSubmitModal, submitExam, resetExamState, setTimeRemaining } from '@/store/examSlice';
 import { getCurrentUser } from '@/store/authSlice';
 import { validateAnswers } from '@/lib/examUtils';
 import { useAutoSaveAnswer } from './useAutoSaveAnswer';
 import { useEnsureSessionId } from './useEnsureSessionId';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useExamLogic = () => {
      const router = useRouter();
      const params = useParams();
      const slug = params.slug as string;
      const dispatch = useAppDispatch();
+     const queryClient = useQueryClient();
 
      const { dashboardData: userData } = useAppSelector((state) => state.auth);
      const {
@@ -23,6 +25,7 @@ export const useExamLogic = () => {
           isLoading,
           isError,
           examDuration,
+          timeRemaining,
           showSubmitModal,
           isExamEnded,
           isSubmitting,
@@ -48,7 +51,10 @@ export const useExamLogic = () => {
      // Reset exam state when slug changes (navigating between exams)
      useEffect(() => {
           dispatch(resetExamState());
-     }, [slug, dispatch]);
+          // Invalidate and refetch user data to get latest assigned exams
+          queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+          dispatch(getCurrentUser()); // Also update Redux store
+     }, [slug, dispatch, queryClient]);
 
      // Fetch user and exam data on mount
      useEffect(() => {
@@ -64,6 +70,12 @@ export const useExamLogic = () => {
      // Navigate to dashboard when exam ends (skip complete page)
      useEffect(() => {
           if (isExamEnded && !isSubmitting) {
+               // Invalidate currentUser query to fetch fresh data (updated assigned exams)
+               queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+
+               // Also refetch to ensure fresh data immediately
+               queryClient.refetchQueries({ queryKey: ['currentUser'] });
+
                setTimeout(() => {
                     // Clear current exam data
                     localStorage.removeItem('session_token');
@@ -75,13 +87,14 @@ export const useExamLogic = () => {
                     router.push('/dashboard');
                }, 500);
           }
-     }, [isExamEnded, isSubmitting, router]);
+     }, [isExamEnded, isSubmitting, router, queryClient]);
 
      // Check if submit is allowed (15 minutes before exam ends)
+     // Update based on timeRemaining from Redux instead of examDuration
      useEffect(() => {
           const fifteenMinutesInSeconds = 15 * 60; // 15 menit = 900 detik
-          setIsSubmitAllowed(examDuration <= fifteenMinutesInSeconds);
-     }, [examDuration]);
+          setIsSubmitAllowed(timeRemaining <= fifteenMinutesInSeconds);
+     }, [timeRemaining]);
 
      // Prevent page unload during exam
      useEffect(() => {
@@ -156,6 +169,11 @@ export const useExamLogic = () => {
           }
      }, [isExamEnded, currentExam, answers, questions, dispatch]);
 
+     // Handler untuk update waktu tersisa
+     const handleTimeUpdate = useCallback((newTimeRemaining: number) => {
+          dispatch(setTimeRemaining(newTimeRemaining));
+     }, [dispatch]);
+
      const confirmSubmission = useCallback(() => {
           dispatch(setShowSubmitModal(false));
           if (currentExam?.exam_id) {
@@ -222,6 +240,7 @@ export const useExamLogic = () => {
           goToNext,
           handleSubmitExam,
           handleTimeUp,
+          handleTimeUpdate,
           confirmSubmission,
           retryFetchExam,
           goBackToExamList,
