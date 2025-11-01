@@ -256,6 +256,8 @@ export const examService = {
                if (options.finalSubmit) {
                     localStorage.removeItem('session_token');
                     localStorage.removeItem('session_id');
+                    localStorage.removeItem('exam_result');
+                    console.log('✅ Session cleared after final submit');
                }
 
                return response.data;
@@ -378,6 +380,7 @@ export const examService = {
                               Authorization: `Bearer ${localStorage.getItem('api_token')}`
                          }
                     });
+                    console.log('✅ Session forcefully ended for exam:', examId);
                }
           } catch {
                console.log('Session force end completed (errors are expected)');
@@ -388,6 +391,21 @@ export const examService = {
           localStorage.removeItem('session_id');
           localStorage.removeItem('exam_result');
           localStorage.removeItem('current_exam_slug');
+     },
+
+     // Clear all exam sessions - useful for logout or when all exams completed
+     clearAllExamSessions: async (): Promise<void> => {
+          console.log('🧹 Clearing all exam sessions...');
+          // Clear all session-related data
+          if (typeof window !== 'undefined') {
+               localStorage.removeItem('session_token');
+               localStorage.removeItem('session_id');
+               localStorage.removeItem('exam_result');
+               localStorage.removeItem('current_exam_slug');
+               localStorage.removeItem('exam_id');
+               localStorage.removeItem('exam_duration');
+          }
+          console.log('✅ All exam sessions cleared');
      },
 
      // Check if user has an active session for exam

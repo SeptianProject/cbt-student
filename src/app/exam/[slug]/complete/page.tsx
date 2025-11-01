@@ -13,6 +13,7 @@ import { useExamFlow } from '@/hooks/useExamFlow';
 import { ExamSubmitResult } from '@/types';
 import { useAppDispatch } from '@/store/hooks';
 import { resetExamState } from '@/store/examSlice';
+import { examService } from '@/services/exam';
 
 export default function ExamCompletePage() {
      const router = useRouter();
@@ -123,7 +124,7 @@ export default function ExamCompletePage() {
           setIsTransitioning(true);
 
           // Small delay to ensure state updates
-          setTimeout(() => {
+          setTimeout(async () => {
                if (nextExam && !allCompleted) {
                     const nextExamSlug = createExamSlug(nextExam.title);
                     console.log('🚀 NAVIGATING TO NEXT EXAM:', {
@@ -145,6 +146,7 @@ export default function ExamCompletePage() {
                     // Clear previous exam data from localStorage
                     localStorage.removeItem('exam_result');
                     localStorage.removeItem('session_token');
+                    localStorage.removeItem('session_id');
 
                     // Set new exam data for next exam
                     localStorage.setItem('exam_id', nextExam.exam_id.toString());
@@ -160,12 +162,12 @@ export default function ExamCompletePage() {
                     // Navigate to next exam
                     router.push(`/exam/${nextExamSlug}`);
                } else {
-                    console.log('🏁 ALL EXAMS COMPLETED - navigating to dashboard');
-                    // Clear exam data
-                    localStorage.removeItem('exam_id');
-                    localStorage.removeItem('exam_duration');
-                    localStorage.removeItem('current_exam_slug');
+                    console.log('🏁 ALL EXAMS COMPLETED - clearing all sessions and navigating to dashboard');
 
+                    // Clear all exam sessions when all exams are completed
+                    await examService.clearAllExamSessions();
+
+                    console.log('✅ All sessions cleared - redirecting to dashboard');
                     router.push('/dashboard');
                }
           }, 200);

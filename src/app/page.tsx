@@ -14,17 +14,11 @@ import { useAppSelector } from "@/store/hooks";
 export default function LoginPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
-
-  // Redux state untuk check auth
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
-
-  // React Query mutation untuk login
   const loginMutation = useLoginMutation()
 
   useEffect(() => {
     setMounted(true)
-
-    // Redirect jika sudah authenticated
     if (isAuthenticated) {
       router.push('/dashboard')
     }

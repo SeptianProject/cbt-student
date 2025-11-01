@@ -17,10 +17,27 @@ export const authService = {
      logout: async (): Promise<void> => {
           await api.post('/logout');
           if (typeof window !== 'undefined') {
+               // Clear all authentication and session data
                localStorage.removeItem('api_token');
                localStorage.removeItem('exam_id');
                localStorage.removeItem('exam_duration');
                localStorage.removeItem('exam_statuses');
+               localStorage.removeItem('session_token');
+               localStorage.removeItem('session_id');
+               localStorage.removeItem('exam_result');
+               localStorage.removeItem('current_exam_slug');
+          }
+     },
+
+     clearAllSessions: async (): Promise<void> => {
+          // Clear all session data without calling API
+          if (typeof window !== 'undefined') {
+               localStorage.removeItem('session_token');
+               localStorage.removeItem('session_id');
+               localStorage.removeItem('exam_result');
+               localStorage.removeItem('current_exam_slug');
+               localStorage.removeItem('exam_id');
+               localStorage.removeItem('exam_duration');
           }
      },
 
