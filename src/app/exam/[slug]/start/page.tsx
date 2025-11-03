@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { LoadingExamScreen } from '@/components/exam/LoadingExamScreen';
 import { ErrorExamScreen } from '@/components/exam/ErrorExamScreen';
@@ -14,6 +15,7 @@ import { resetExamState } from '@/store/examSlice';
 
 export default function ExamStartPage() {
      const dispatch = useAppDispatch();
+     const router = useRouter();
 
      const {
           userData,
@@ -36,14 +38,24 @@ export default function ExamStartPage() {
           handleTimeUp,
           handleTimeUpdate,
           confirmSubmission,
-          retryFetchExam,
+          // retryFetchExam, // Not needed anymore - auto redirect instead
           goBackToExamList,
           examDuration,
           isSubmitAllowed,
-          // Auto-save status
+          // Auto-save status (per-answer)
           isSaving,
           lastSavedTime,
           saveError,
+          // Restore status
+          isRestoring,
+          hasRestored,
+          restoreError,
+          restoreStats,
+          // Periodic backup status (bulk save)
+          isBackingUp,
+          lastBackupTime,
+          backupError,
+          backupCount,
      } = useExamLogic();
 
      React.useEffect(() => {
@@ -51,7 +63,25 @@ export default function ExamStartPage() {
           localStorage.removeItem('exam_result');
      }, [dispatch]);
 
+     // Auto-redirect ke dashboard jika exam ended atau session invalid
+     React.useEffect(() => {
+          if (isExamEnded) {
+               console.log('🔄 Exam ended detected, redirecting to dashboard...');
+               // Clear session data
+               localStorage.removeItem('session_token');
+               localStorage.removeItem('session_id');
+               localStorage.removeItem('exam_result');
+               localStorage.removeItem('current_exam_slug');
 
+               // Small delay untuk smoother UX
+               const timer = setTimeout(() => {
+                    router.push('/dashboard');
+               }, 300);
+
+               return () => clearTimeout(timer);
+          }
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+     }, [isExamEnded]);
 
      if (!userData || !currentExam || isLoading || isExamEnded) {
           return <LoadingExamScreen />;
@@ -68,14 +98,12 @@ export default function ExamStartPage() {
           );
      }
 
+     // ❌ REMOVE ERROR MODAL - Langsung redirect ke dashboard
+     // Jika error dan exam ended, akan di-handle oleh useEffect di atas
+     // Hanya tampilkan error jika BUKAN session invalid (isExamEnded = false)
      if ((isError || (!questions.length && !isLoading)) && !isExamEnded) {
-          return (
-               <ErrorExamScreen
-                    title="Gagal Memuat Ujian"
-                    message="Terjadi kesalahan saat memuat soal ujian. Silakan coba lagi."
-                    onRetry={retryFetchExam}
-               />
-          );
+          // Don't show error screen, just loading while redirecting
+          return <LoadingExamScreen />;
      }
 
      return (
@@ -84,10 +112,22 @@ export default function ExamStartPage() {
                     <ExamProgressHeader
                          onTimeUp={handleTimeUp}
                          onTimeUpdate={handleTimeUpdate}
+                         // Auto-save status
                          isSaving={isSaving}
                          lastSavedTime={lastSavedTime}
                          saveError={saveError}
+                         // Restore status
+                         isRestoring={isRestoring}
+                         hasRestored={hasRestored}
+                         restoreError={restoreError}
+                         restoreStats={restoreStats}
+                         // Periodic backup status
+                         isBackingUp={isBackingUp}
+                         lastBackupTime={lastBackupTime}
+                         backupError={backupError}
+                         backupCount={backupCount}
                     />
+
                     <ExamMainContent
                          currentQuestionIndex={currentQuestionIndex}
                          currentQuestion={currentQuestion}

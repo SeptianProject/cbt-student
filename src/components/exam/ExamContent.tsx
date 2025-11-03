@@ -116,7 +116,7 @@ const ExamContent: React.FC<ExamContentProps> = ({ userData }) => {
                                    <span className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(getExamStatus(currentExam.exam_id))}`}>
                                         {getStatusText(getExamStatus(currentExam.exam_id))}
                                    </span>
-                              </div> */}
+                              </div> */} 
 
                               <h2 className="text-3xl font-bold mb-6">
                                    {currentExam.title}

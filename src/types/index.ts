@@ -198,3 +198,68 @@ export interface AutoSaveResponse {
           last_saved_at: string;
      };
 }
+
+export interface RestoreAnswersResponse {
+     success: boolean;
+     message: string;
+     data: {
+          session_id: number;
+          session_status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+          restored_at: string;
+          stats: {
+               total_answered: number;
+               multiple_choice_answered: number;
+               essay_answered: number;
+          };
+     };
+}
+
+export interface GetSavedAnswersResponse {
+     success: boolean;
+     data: {
+          session_id: number;
+          session_status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+          exam_title: string;
+          answers: Record<string, string>; // { "1": "A", "2": "B", "3": "C" }
+          essay_answers: Record<string, string>; // { "5": "Jawaban essay..." }
+          total_answered: number;
+          last_answered_at: string;
+          is_empty: boolean;
+     };
+}
+
+export interface CompactAnswersResponse {
+     success: boolean;
+     data: {
+          session_id: number;
+          answers: string; // JSON string: "{\"1\":\"A\",\"2\":\"B\",\"3\":\"C\"}"
+          size_bytes: number;
+     };
+}
+
+export interface SessionProgressResponse {
+     success: boolean;
+     data: {
+          session_id: number;
+          exam_title: string;
+          status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+          total_questions: number;
+          progress_percent: number;
+          time_remaining: number;
+          answer_stats: {
+               total_answered: number;
+               multiple_choice_answered: number;
+               essay_answered: number;
+          };
+     };
+}
+
+export interface PeriodicBackupResponse {
+     success: boolean;
+     message?: string;
+     data?: {
+          session_id: number;
+          total_saved: number;
+          last_backup_at: string;
+     };
+}

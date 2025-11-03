@@ -7,6 +7,8 @@ import { fetchExam, setAnswers, setFlag, setShowSubmitModal, submitExam, resetEx
 import { getCurrentUser } from '@/store/authSlice';
 import { validateAnswers } from '@/lib/examUtils';
 import { useAutoSaveAnswer } from './useAutoSaveAnswer';
+import { useRestoreAnswers } from './useRestoreAnswers';
+import { usePeriodicBackup } from './usePeriodicBackup';
 import { useEnsureSessionId } from './useEnsureSessionId';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -39,13 +41,28 @@ export const useExamLogic = () => {
      // Ensure session ID is always available
      useEnsureSessionId();
 
-     // Auto-save answers with status tracking
+     // Restore answers from temporary table after refresh/reconnect
+     const { isRestoring, hasRestored, restoreError, restoreStats } = useRestoreAnswers({
+          sessionId,
+          enabled: sessionStatus === 'progress' && !isExamEnded
+     });
+
+     // Auto-save answers with status tracking (individual answer save)
      const { isSaving, lastSavedTime, saveError } = useAutoSaveAnswer({
           sessionId,
           answers,
           questions,
-          enabled: sessionStatus === 'progress' && !isExamEnded,
+          enabled: sessionStatus === 'progress' && !isExamEnded && hasRestored, // Only auto-save after restore
           debounceMs: 500 // Faster debounce for better UX
+     });
+
+     // Periodic backup (bulk save every 2 minutes)
+     const { isBackingUp, lastBackupTime, backupError, backupCount } = usePeriodicBackup({
+          sessionId,
+          answers,
+          questions,
+          enabled: sessionStatus === 'progress' && !isExamEnded && hasRestored, // Only backup after restore
+          intervalMs: 2 * 60 * 1000 // 2 minutes
      });
 
      // Reset exam state when slug changes (navigating between exams)
@@ -231,6 +248,16 @@ export const useExamLogic = () => {
           isSaving,
           lastSavedTime,
           saveError,
+          // Restore status
+          isRestoring,
+          hasRestored,
+          restoreError,
+          restoreStats,
+          // Periodic backup status
+          isBackingUp,
+          lastBackupTime,
+          backupError,
+          backupCount,
 
           // Handlers
           handleAnswerChange,

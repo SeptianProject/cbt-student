@@ -1,5 +1,17 @@
 import api from "@/lib/api";
-import { Exam, StudentAnswer, AssignedExam, ParsedQuestion, ExamSubmitOptions, AutoSaveResponse } from "@/types";
+import {
+     Exam,
+     StudentAnswer,
+     AssignedExam,
+     ParsedQuestion,
+     ExamSubmitOptions,
+     AutoSaveResponse,
+     GetSavedAnswersResponse,
+     RestoreAnswersResponse,
+     CompactAnswersResponse,
+     SessionProgressResponse,
+     PeriodicBackupResponse
+} from "@/types";
 import { findExamBySlug } from "@/lib/examUtils";
 
 export const examService = {
@@ -59,16 +71,12 @@ export const examService = {
                     }
                }
 
-               console.log('exam id:', examId);
-               console.log('data exam start :', response.data);
                return response.data;
           } catch (error: unknown) {
                // Check if error is due to existing active session
                const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
                if (axiosError?.response?.status === 422 &&
                     axiosError?.response?.data?.message?.includes('sesi ujian yang aktif')) {
-
-                    console.log('Active session detected, clearing and retrying...');
 
                     // Clear existing session and retry
                     await examService.clearExamSession(examId);
@@ -96,8 +104,6 @@ export const examService = {
                          }
                     }
 
-                    console.log('exam id (retry):', examId);
-                    console.log('data exam start (retry):', retryResponse.data);
                     return retryResponse.data;
                }
 
@@ -130,7 +136,6 @@ export const examService = {
                if (axiosError?.response?.status === 422 &&
                     axiosError?.response?.data?.message?.includes('sesi ujian yang aktif')) {
 
-                    console.log('Active session detected, clearing and retrying...');
                     await examService.clearExamSession(examId);
                     return await examService.examStart(examId);
                }
@@ -226,25 +231,12 @@ export const examService = {
                payload.essay_answers = essayAnswers;
           }
 
-          // Debug logging
-          console.log('Submit Exam Debug Info:', {
-               examId,
-               sessionToken: sessionToken?.substring(0, 10) + '...',
-               payload,
-               answersCount: Object.keys(answers).length,
-               questionsCount: questions.length,
-               multipleChoiceCount: Object.keys(multipleChoiceAnswers).length,
-               essayCount: Object.keys(essayAnswers).length
-          });
-
           try {
                const response = await api.post(`/siswa/exams/${examId}/submit`, payload, {
                     headers: {
                          Authorization: `Bearer ${localStorage.getItem('api_token')}`
                     }
                });
-
-               console.log('exam submitted successfully:', response.data);
 
                // Verify response structure
                if (!response.data || typeof response.data !== 'object' || response.data.success !== true) {
@@ -257,7 +249,6 @@ export const examService = {
                     localStorage.removeItem('session_token');
                     localStorage.removeItem('session_id');
                     localStorage.removeItem('exam_result');
-                    console.log('✅ Session cleared after final submit');
                }
 
                return response.data;
@@ -267,13 +258,6 @@ export const examService = {
                // Handle specific error cases
                if (error && typeof error === 'object' && 'response' in error) {
                     const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
-
-                    console.log('Backend Error Details:', {
-                         status: axiosError.response?.status,
-                         data: axiosError.response?.data,
-                         examId,
-                         sessionToken: sessionToken?.substring(0, 10) + '...'
-                    });
 
                     if (axiosError.response?.status === 500) {
                          throw new Error('Terjadi kesalahan saat menyimpan hasil ujian. Silakan coba lagi.');
@@ -337,8 +321,6 @@ export const examService = {
                type: type
           };
 
-          console.log('📡 Sending update-answer request:', payload);
-
           try {
                const response = await api.post('/siswa/exam-session/update-answer', payload, {
                     headers: {
@@ -346,7 +328,6 @@ export const examService = {
                     }
                });
 
-               console.log('✅ Update-answer response:', response.data);
                return response.data;
           } catch (error) {
                console.error('❌ Update-answer failed:', error);
@@ -380,7 +361,6 @@ export const examService = {
                               Authorization: `Bearer ${localStorage.getItem('api_token')}`
                          }
                     });
-                    console.log('✅ Session forcefully ended for exam:', examId);
                }
           } catch {
                console.log('Session force end completed (errors are expected)');
@@ -395,7 +375,6 @@ export const examService = {
 
      // Clear all exam sessions - useful for logout or when all exams completed
      clearAllExamSessions: async (): Promise<void> => {
-          console.log('🧹 Clearing all exam sessions...');
           // Clear all session-related data
           if (typeof window !== 'undefined') {
                localStorage.removeItem('session_token');
@@ -405,7 +384,6 @@ export const examService = {
                localStorage.removeItem('exam_id');
                localStorage.removeItem('exam_duration');
           }
-          console.log('✅ All exam sessions cleared');
      },
 
      // Check if user has an active session for exam
@@ -425,6 +403,414 @@ export const examService = {
                return response.data?.success === true;
           } catch {
                return false;
+          }
+     },
+
+     // Get saved answers from temporary table (for recovery after refresh)
+     // Uses GET endpoint: /api/siswa/exam-session/{sessionId}/answers
+     getSavedAnswers: async (sessionId: number): Promise<Record<number, StudentAnswer>> => {
+          if (!sessionId || sessionId <= 0) {
+               console.warn('⚠️ Invalid session ID for getSavedAnswers');
+               return {};
+          }
+
+          try {
+               console.log('🔄 Fetching saved answers from temporary table:', { sessionId });
+
+               // Backend might return two different formats:
+               // Format 1: {success: true, data: {session_id, answers, essay_answers}}
+               // Format 2: {session_id, session_status, answers, essay_answers} (direct)
+               interface DirectResponseFormat {
+                    session_id: number;
+                    session_status: string;
+                    exam_title: string;
+                    answers: Record<string, string>;
+                    essay_answers: Record<string, string>;
+                    is_empty: boolean;
+               }
+
+               const response = await api.get<GetSavedAnswersResponse | DirectResponseFormat>(`/siswa/exam-session/${sessionId}/answers`, {
+                    headers: {
+                         Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                    }
+               });
+
+               console.log('✅ Saved answers response:', response.data);
+
+               const savedAnswers: Record<number, StudentAnswer> = {};
+
+               // 🔥 Handle both response formats
+               let answersData: Record<string, string> | undefined;
+               let essayAnswersData: Record<string, string> | undefined;
+               let isEmpty: boolean;
+
+               // Check if it's wrapped format (has 'success' field)
+               const isWrappedFormat = 'success' in response.data && response.data.success;
+               const isDirectFormat = 'session_id' in response.data && !('success' in response.data);
+
+               console.log('🔍 Response structure:', {
+                    isWrappedFormat,
+                    isDirectFormat
+               });
+
+               if (isWrappedFormat && 'data' in response.data && response.data.data) {
+                    // Format 1: Wrapped format
+                    console.log('📦 Using wrapped format (success + data)');
+                    answersData = response.data.data.answers;
+                    essayAnswersData = response.data.data.essay_answers;
+                    isEmpty = response.data.data.is_empty;
+               } else if (isDirectFormat) {
+                    // Format 2: Direct format (backend return langsung tanpa wrapper)
+                    console.log('📦 Using direct format (no wrapper)');
+                    const directData = response.data as DirectResponseFormat;
+                    answersData = directData.answers;
+                    essayAnswersData = directData.essay_answers;
+                    isEmpty = directData.is_empty;
+               } else {
+                    console.error('❌ Unknown response format:', response.data);
+                    return {};
+               }
+
+               console.log('📦 Processing answers:', {
+                    answersData,
+                    essayAnswersData,
+                    isEmpty,
+                    answersType: typeof answersData,
+                    answersIsObject: typeof answersData === 'object' && !Array.isArray(answersData)
+               });
+
+               // Skip if empty
+               if (isEmpty) {
+                    console.log('ℹ️ No saved answers found (empty session)');
+                    return {};
+               }
+
+               // Process multiple choice answers
+               if (answersData && typeof answersData === 'object' && !Array.isArray(answersData)) {
+                    console.log('🔄 Processing multiple choice answers:', answersData);
+                    Object.entries(answersData).forEach(([questionIdStr, answerValue]) => {
+                         const questionId = parseInt(questionIdStr);
+                         const answerStr = String(answerValue || '');
+
+                         console.log(`   Processing Q${questionId}: "${answerStr}"`);
+
+                         if (answerStr.trim()) {
+                              // Convert "B,C,D" to ["B", "C", "D"] or keep single "A"
+                              const parsedAnswer = answerStr.includes(',')
+                                   ? answerStr.split(',').map(a => a.trim()).filter(a => a)
+                                   : answerStr;
+
+                              console.log(`   ✅ Parsed answer for Q${questionId}:`, parsedAnswer);
+
+                              savedAnswers[questionId] = {
+                                   question_id: questionId,
+                                   answer: parsedAnswer
+                              };
+                         }
+                    });
+               } else {
+                    console.warn('⚠️ Answers data is not a valid object:', answersData);
+               }
+
+               // Process essay answers
+               if (essayAnswersData && typeof essayAnswersData === 'object' && !Array.isArray(essayAnswersData)) {
+                    console.log('🔄 Processing essay answers:', essayAnswersData);
+                    Object.entries(essayAnswersData).forEach(([questionIdStr, answerValue]) => {
+                         const questionId = parseInt(questionIdStr);
+                         const essayAnswer = String(answerValue || '');
+
+                         if (essayAnswer.trim()) {
+                              console.log(`   ✅ Parsed essay for Q${questionId}`);
+                              savedAnswers[questionId] = {
+                                   question_id: questionId,
+                                   answer: essayAnswer
+                              };
+                         }
+                    });
+               }
+
+               const totalRestored = Object.keys(savedAnswers).length;
+               if (totalRestored > 0) {
+                    console.log(`✅ Restored ${totalRestored} answers from temporary table:`, savedAnswers);
+               } else {
+                    console.log('ℹ️ No valid answers to restore');
+               }
+
+               return savedAnswers;
+          } catch (error) {
+               console.error('❌ Failed to fetch saved answers:', error);
+               // Don't throw error - gracefully handle by returning empty object
+               // This allows exam to continue even if restore fails
+               return {};
+          }
+     },
+
+     // Get compact answers (smaller payload, JSON string format)
+     // Uses GET endpoint: /api/siswa/exam-session/{sessionId}/compact-answers
+     getCompactAnswers: async (sessionId: number): Promise<Record<number, StudentAnswer>> => {
+          if (!sessionId || sessionId <= 0) {
+               console.warn('⚠️ Invalid session ID for getCompactAnswers');
+               return {};
+          }
+
+          try {
+               console.log('🔄 Fetching compact answers:', { sessionId });
+
+               const response = await api.get<CompactAnswersResponse>(`/siswa/exam-session/${sessionId}/compact-answers`, {
+                    headers: {
+                         Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                    }
+               });
+
+               console.log('✅ Compact answers response:', response.data);
+
+               const savedAnswers: Record<number, StudentAnswer> = {};
+
+               if (response.data?.success && response.data?.data?.answers) {
+                    // Parse JSON string
+                    const answersObject = JSON.parse(response.data.data.answers);
+
+                    Object.entries(answersObject).forEach(([questionIdStr, answerValue]) => {
+                         const questionId = parseInt(questionIdStr);
+                         const answerStr = String(answerValue || '');
+
+                         if (answerStr.trim()) {
+                              const parsedAnswer = answerStr.includes(',')
+                                   ? answerStr.split(',').map(a => a.trim()).filter(a => a)
+                                   : answerStr;
+
+                              savedAnswers[questionId] = {
+                                   question_id: questionId,
+                                   answer: parsedAnswer
+                              };
+                         }
+                    });
+
+                    console.log(`✅ Restored ${Object.keys(savedAnswers).length} answers from compact format`);
+               }
+
+               return savedAnswers;
+          } catch (error) {
+               console.error('❌ Failed to fetch compact answers:', error);
+               return {};
+          }
+     },
+
+     // Get session progress
+     // Uses GET endpoint: /api/siswa/exam-session/{sessionId}/progress
+     getSessionProgress: async (sessionId: number): Promise<SessionProgressResponse['data'] | null> => {
+          if (!sessionId || sessionId <= 0) {
+               console.warn('⚠️ Invalid session ID for getSessionProgress');
+               return null;
+          }
+
+          try {
+               const response = await api.get<SessionProgressResponse>(`/siswa/exam-session/${sessionId}/progress`, {
+                    headers: {
+                         Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                    }
+               });
+
+               if (response.data?.success) {
+                    return response.data.data;
+               }
+
+               return null;
+          } catch (error) {
+               console.error('❌ Failed to fetch session progress:', error);
+               return null;
+          }
+     },
+
+     // Restore answers using backup endpoint (POST /api/siswa/exam-session/restore-answers)
+     // This is more aggressive - it can restore even expired sessions back to progress
+     restoreAnswersFromBackup: async (
+          sessionId: number,
+          answers: Record<number, StudentAnswer>,
+          questions: ParsedQuestion[]
+     ): Promise<RestoreAnswersResponse> => {
+          if (!sessionId || sessionId <= 0) {
+               throw new Error('Invalid session ID for restore');
+          }
+
+          try {
+               console.log('🔄 Restoring answers from backup...', { sessionId, answersCount: Object.keys(answers).length });
+
+               // Separate multiple choice and essay answers
+               const multipleChoiceAnswers: Record<string, string> = {};
+               const essayAnswers: Record<string, string> = {};
+
+               Object.values(answers).forEach(answer => {
+                    const question = questions.find(q => q.id === answer.question_id);
+
+                    if (question && answer.answer !== undefined && answer.answer !== null && answer.answer !== '') {
+                         if (question.question_type_id === "3") {
+                              // Essay question
+                              const essayAnswer = Array.isArray(answer.answer)
+                                   ? answer.answer.join(', ')
+                                   : String(answer.answer || '');
+
+                              if (essayAnswer.trim()) {
+                                   essayAnswers[answer.question_id.toString()] = essayAnswer.substring(0, 5000);
+                              }
+                         } else {
+                              // Multiple choice questions
+                              let mcAnswer = '';
+
+                              if (Array.isArray(answer.answer)) {
+                                   mcAnswer = answer.answer.filter(a => a !== '').join(',');
+                              } else {
+                                   mcAnswer = String(answer.answer || '');
+                              }
+
+                              if (mcAnswer.trim()) {
+                                   multipleChoiceAnswers[answer.question_id.toString()] = mcAnswer.substring(0, 10);
+                              }
+                         }
+                    }
+               });
+
+               // Prepare payload according to backend requirements
+               const payload = {
+                    session_id: sessionId,
+                    answers_json: JSON.stringify(multipleChoiceAnswers),
+                    essay_json: JSON.stringify(essayAnswers)
+               };
+
+               console.log('📡 Restore payload:', {
+                    session_id: sessionId,
+                    answers_count: Object.keys(multipleChoiceAnswers).length,
+                    essays_count: Object.keys(essayAnswers).length
+               });
+
+               const response = await api.post<RestoreAnswersResponse>(
+                    '/siswa/exam-session/restore-answers',
+                    payload,
+                    {
+                         headers: {
+                              Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                         }
+                    }
+               );
+
+               console.log('✅ Restore response:', response.data);
+
+               if (!response.data?.success) {
+                    throw new Error('Restore failed: Invalid response from server');
+               }
+
+               return response.data;
+          } catch (error) {
+               console.error('❌ Failed to restore answers from backup:', error);
+               if (error && typeof error === 'object' && 'response' in error) {
+                    const axiosError = error as { response?: { status?: number; data?: unknown } };
+                    console.error('Error response:', {
+                         status: axiosError.response?.status,
+                         data: axiosError.response?.data
+                    });
+               }
+               throw error;
+          }
+     },
+
+     // Periodic backup using save-answers endpoint
+     // This saves all current answers periodically (e.g., every 2 minutes)
+     saveAnswersBackup: async (
+          sessionId: number,
+          answers: Record<number, StudentAnswer>,
+          questions: ParsedQuestion[]
+     ): Promise<PeriodicBackupResponse> => {
+          if (!sessionId || sessionId <= 0) {
+               console.warn('⚠️ Invalid session ID for backup');
+               return { success: false, message: 'Invalid session ID' };
+          }
+
+          try {
+               console.log('💾 Creating periodic backup...', { sessionId, answersCount: Object.keys(answers).length });
+
+               // Separate multiple choice and essay answers
+               const multipleChoiceAnswers: Record<string, string> = {};
+               const essayAnswers: Record<string, string> = {};
+
+               Object.values(answers).forEach(answer => {
+                    const question = questions.find(q => q.id === answer.question_id);
+
+                    if (question && answer.answer !== undefined && answer.answer !== null && answer.answer !== '') {
+                         if (question.question_type_id === "3") {
+                              // Essay question
+                              const essayAnswer = Array.isArray(answer.answer)
+                                   ? answer.answer.join(', ')
+                                   : String(answer.answer || '');
+
+                              if (essayAnswer.trim()) {
+                                   essayAnswers[answer.question_id.toString()] = essayAnswer.substring(0, 5000);
+                              }
+                         } else {
+                              // Multiple choice questions
+                              let mcAnswer = '';
+
+                              if (Array.isArray(answer.answer)) {
+                                   mcAnswer = answer.answer.filter(a => a !== '').join(',');
+                              } else {
+                                   mcAnswer = String(answer.answer || '');
+                              }
+
+                              if (mcAnswer.trim()) {
+                                   multipleChoiceAnswers[answer.question_id.toString()] = mcAnswer.substring(0, 10);
+                              }
+                         }
+                    }
+               });
+
+               // Skip backup if no answers to save
+               if (Object.keys(multipleChoiceAnswers).length === 0 && Object.keys(essayAnswers).length === 0) {
+                    console.log('ℹ️ No answers to backup');
+                    return { success: true, message: 'No answers to backup' };
+               }
+
+               // Prepare payload
+               const payload = {
+                    session_id: sessionId,
+                    answers_json: JSON.stringify(multipleChoiceAnswers),
+                    essay_json: JSON.stringify(essayAnswers)
+               };
+
+               console.log('💾 Backup payload:', {
+                    session_id: sessionId,
+                    answers_count: Object.keys(multipleChoiceAnswers).length,
+                    essays_count: Object.keys(essayAnswers).length
+               });
+
+               const response = await api.post<PeriodicBackupResponse>(
+                    '/siswa/exam-session/save-answers',
+                    payload,
+                    {
+                         headers: {
+                              Authorization: `Bearer ${localStorage.getItem('api_token')}`
+                         }
+                    }
+               );
+
+               console.log('✅ Backup successful:', response.data);
+
+               return response.data || {
+                    success: true,
+                    message: 'Backup created successfully'
+               };
+          } catch (error) {
+               console.error('❌ Failed to create backup:', error);
+               if (error && typeof error === 'object' && 'response' in error) {
+                    const axiosError = error as { response?: { status?: number; data?: unknown } };
+                    console.error('Backup error response:', {
+                         status: axiosError.response?.status,
+                         data: axiosError.response?.data
+                    });
+               }
+               // Don't throw - backup failure shouldn't block the exam
+               return {
+                    success: false,
+                    message: 'Backup failed but exam can continue'
+               };
           }
      },
 

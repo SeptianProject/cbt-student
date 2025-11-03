@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Flag, FlagOff, } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getComplexMultipleChoiceInfo } from '@/lib/examUtils';
+import { useAppSelector } from '@/store/hooks';
 
 interface QuestionCardProps {
      question: ParsedQuestion;
@@ -24,30 +24,45 @@ export default function QuestionCard({
      onAnswerChange,
      onFlagToggle
 }: QuestionCardProps) {
+     // 🔥 Subscribe to Redux store untuk mendapatkan jawaban yang sudah disimpan
+     const reduxAnswer = useAppSelector((state) => state.exam.answers[question.id]);
+
      const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
      const [essayAnswer, setEssayAnswer] = useState<string>('');
      const [isFlagged, setIsFlagged] = useState<boolean>(false);
 
      useEffect(() => {
+          // 🔥 Prioritaskan Redux answer (dari restore) daripada currentAnswer (dari props)
+          const answerSource = reduxAnswer || currentAnswer;
+
+          console.log(`📝 QuestionCard ${question.id} update:`, {
+               reduxAnswer,
+               currentAnswer,
+               using: answerSource ? 'found' : 'none'
+          });
+
           // Reset state ketika question berubah
           setSelectedAnswers([]);
           setEssayAnswer('');
           setIsFlagged(false);
 
-          // Set jawaban sesuai dengan currentAnswer yang ada
-          if (currentAnswer) {
-               if (Array.isArray(currentAnswer.answer)) {
-                    setSelectedAnswers(currentAnswer.answer);
+          // Set jawaban dari Redux store atau currentAnswer
+          if (answerSource) {
+               if (Array.isArray(answerSource.answer)) {
+                    setSelectedAnswers(answerSource.answer);
+                    console.log(`✅ Restored multiple choice answers for Q${question.id}:`, answerSource.answer);
                } else {
                     if (question.question_type_id === '3') { // Essay type
-                         setEssayAnswer(currentAnswer.answer);
+                         setEssayAnswer(answerSource.answer as string);
+                         console.log(`✅ Restored essay answer for Q${question.id}`);
                     } else {
-                         setSelectedAnswers([currentAnswer.answer]);
+                         setSelectedAnswers([answerSource.answer as string]);
+                         console.log(`✅ Restored single choice answer for Q${question.id}:`, answerSource.answer);
                     }
                }
-               setIsFlagged(currentAnswer.is_flagged || false);
+               setIsFlagged(answerSource.is_flagged || false);
           }
-     }, [currentAnswer, question.id, question.question_type_id]);
+     }, [reduxAnswer, currentAnswer, question.id, question.question_type_id]);
 
      const handleSingleChoice = (optionKey: string) => {
           const newSelectedAnswers = [optionKey];

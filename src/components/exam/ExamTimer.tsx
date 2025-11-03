@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { Clock, AlertTriangle } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 interface ExamTimerProps {
      initialTime: number;
@@ -33,8 +33,11 @@ export function ExamTimer({ initialTime, onTimeUp, onTimeUpdate, autoSubmit = tr
           const timer = setInterval(() => {
                setTimeLeft(prev => {
                     const newTime = prev - 1;
+                    // Call onTimeUpdate in next tick to avoid setState during render
                     if (onTimeUpdate) {
-                         onTimeUpdate(newTime);
+                         queueMicrotask(() => {
+                              onTimeUpdate(newTime);
+                         });
                     }
                     return newTime;
                });

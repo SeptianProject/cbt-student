@@ -72,9 +72,23 @@ export const fetchExam = createAsyncThunk(
                console.log('📊 Session status response:', sessionStatus);
 
                return { exam, examData, sessionStatus, userId };
-          } catch (error) {
+          } catch (error: unknown) {
                console.error('❌ Failed to fetch exam:', error);
-               return rejectWithValue(error);
+
+               // Detect error type untuk proper handling
+               const axiosError = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
+               const errorType = axiosError?.response?.status === 422
+                    ? 'SESSION_INVALID'
+                    : axiosError?.response?.status === 404
+                         ? 'EXAM_NOT_FOUND'
+                         : 'UNKNOWN_ERROR';
+
+               return rejectWithValue({
+                    type: errorType,
+                    status: axiosError?.response?.status,
+                    message: axiosError?.response?.data?.message || axiosError?.message || 'Unknown error',
+                    originalError: error
+               });
           }
      }
 );
@@ -112,6 +126,8 @@ const examSlice = createSlice({
           setAnswers(state: Draft<ExamState>, action: PayloadAction<{ questionId: number; answer: string | string[] }>) {
                const { questionId, answer } = action.payload;
 
+               console.log(`🔧 Redux setAnswers called for question ${questionId}:`, answer);
+
                // Pastikan answer tidak kosong atau undefined untuk menghindari masalah state
                if (answer !== undefined && answer !== null) {
                     state.answers[questionId] = {
@@ -119,6 +135,8 @@ const examSlice = createSlice({
                          answer,
                          is_flagged: state.answers[questionId]?.is_flagged || false,
                     };
+
+                    console.log(`✅ Answer saved in Redux for Q${questionId}. Total answers:`, Object.keys(state.answers).length);
                }
           },
           setFlag(state: Draft<ExamState>, action: PayloadAction<{ questionId: number; isFlagged: boolean }>) {
@@ -167,6 +185,28 @@ const examSlice = createSlice({
                     state.isLoading = true;
                     state.isError = false;
                     state.errorMessage = null;
+               })
+               .addCase(fetchExam.rejected, (state: Draft<ExamState>, action) => {
+                    state.isLoading = false;
+                    state.isError = true;
+
+                    const error = action.payload as { type?: string; status?: number; message?: string } | undefined;
+                    state.errorMessage = error?.message || 'Failed to load exam';
+
+                    // Log error untuk debugging
+                    console.error('❌ Fetch exam rejected:', {
+                         type: error?.type,
+                         status: error?.status,
+                         message: error?.message
+                    });
+
+                    // Jika session invalid (422), langsung set exam ended
+                    // Ini akan trigger auto-redirect ke dashboard di useExamLogic
+                    if (error?.type === 'SESSION_INVALID') {
+                         console.log('🔄 Session invalid detected, marking exam as ended for auto-redirect');
+                         state.isExamEnded = true;
+                         state.sessionStatus = 'submitted'; // or 'expired'
+                    }
                })
                .addCase(
                     fetchExam.fulfilled,
@@ -248,11 +288,7 @@ const examSlice = createSlice({
                          state.isLoading = false;
                     }
                )
-               .addCase(fetchExam.rejected, (state: Draft<ExamState>, action: { error: { message?: string } }) => {
-                    state.isLoading = false;
-                    state.isError = true;
-                    state.errorMessage = action.error?.message || 'Failed to fetch exam';
-               })
+               // Note: fetchExam.rejected handler is defined earlier in the builder chain (line 189)
                .addCase(submitExam.pending, (state: Draft<ExamState>) => {
                     state.isSubmitting = true;
                     state.isError = false;
