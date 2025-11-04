@@ -69,17 +69,19 @@ const parseChoices = (choices: unknown): Record<string, string> => {
 };
 
 // Helper function to parse answer keys from various formats
+// ✅ Mendukung format baru dari backend: '[0]', '[1,2]', dll (index numerik dalam JSON array)
 const parseAnswerKey = (answerKey: unknown): string[] => {
-     // If already an array, return as is
+     // If already an array, convert all elements to string
      if (Array.isArray(answerKey)) {
-          return answerKey.map(String);
+          return answerKey.map(item => String(item));
      }
 
      // If string, try to parse as JSON first
      if (typeof answerKey === 'string') {
           const parsed = safeJSONParse(answerKey);
           if (Array.isArray(parsed)) {
-               return parsed.map(String);
+               // ✅ Convert parsed array items to string (mendukung [0] -> ["0"])
+               return parsed.map(item => String(item));
           }
 
           // Parse as comma/pipe/semicolon separated values
@@ -104,6 +106,7 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
                id: question.id,
                choices: question.choices,
                answer_key: question.answer_key,
+               answer_key_type: typeof question.answer_key,
                points: question.points,
                question_image: question.question_image,
                choices_images: question.choices_images
@@ -111,6 +114,12 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
 
           const choices = parseChoices(question.choices);
           const answer_key = parseAnswerKey(question.answer_key);
+
+          console.log('✅ Parsed answer_key:', {
+               original: question.answer_key,
+               parsed: answer_key,
+               choiceKeys: Object.keys(choices)
+          });
 
           // Handle points parsing
           let points = 0;
