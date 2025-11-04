@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Flag, FlagOff, } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAppSelector } from '@/store/hooks';
+import ExamImage from './ExamImage';
+import { getQuestionImageUrl, getChoiceImageUrl, hasQuestionImage, hasChoiceImage } from '@/lib/imageUtils';
 
 interface QuestionCardProps {
      question: ParsedQuestion;
@@ -116,8 +118,21 @@ export default function QuestionCard({
                                              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                         />
                                         <div className="flex-1">
-                                             <span className="font-medium text-gray-800">{key}.</span>
-                                             <span className="ml-2 text-gray-700">{value}</span>
+                                             <div className="mb-2">
+                                                  <span className="font-medium text-gray-800">{key}.</span>
+                                                  <span className="ml-2 text-gray-700">{value}</span>
+                                             </div>
+
+                                             {/* Choice Image - Display if available */}
+                                             {hasChoiceImage(question.choices_images, key) && (
+                                                  <ExamImage
+                                                       src={getChoiceImageUrl(question.choices_images?.[key])}
+                                                       alt={`Pilihan ${key}`}
+                                                       className="max-w-md mt-2"
+                                                       aspectRatio="auto"
+                                                       showFallback={false}
+                                                  />
+                                             )}
                                         </div>
                                    </label>
                               ))}
@@ -149,8 +164,21 @@ export default function QuestionCard({
                                              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                         />
                                         <div className="flex-1">
-                                             <span className="font-medium text-gray-800">{key}.</span>
-                                             <span className="ml-2 text-gray-700">{value}</span>
+                                             <div className="mb-2">
+                                                  <span className="font-medium text-gray-800">{key}.</span>
+                                                  <span className="ml-2 text-gray-700">{value}</span>
+                                             </div>
+
+                                             {/* Choice Image - Display if available */}
+                                             {hasChoiceImage(question.choices_images, key) && (
+                                                  <ExamImage
+                                                       src={getChoiceImageUrl(question.choices_images?.[key])}
+                                                       alt={`Pilihan ${key}`}
+                                                       className="max-w-md mt-2"
+                                                       aspectRatio="auto"
+                                                       showFallback={false}
+                                                  />
+                                             )}
                                         </div>
                                    </label>
                               ))}
@@ -185,8 +213,21 @@ export default function QuestionCard({
                                              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                         />
                                         <div className="flex-1">
-                                             <span className="font-medium text-gray-800">{key}.</span>
-                                             <span className="ml-2 text-gray-700">{value}</span>
+                                             <div className="mb-2">
+                                                  <span className="font-medium text-gray-800">{key}.</span>
+                                                  <span className="ml-2 text-gray-700">{value}</span>
+                                             </div>
+
+                                             {/* Choice Image - Display if available */}
+                                             {hasChoiceImage(question.choices_images, key) && (
+                                                  <ExamImage
+                                                       src={getChoiceImageUrl(question.choices_images?.[key])}
+                                                       alt={`Pilihan ${key}`}
+                                                       className="max-w-md mt-2"
+                                                       aspectRatio="auto"
+                                                       showFallback={false}
+                                                  />
+                                             )}
                                         </div>
                                    </label>
                               ))}
@@ -264,9 +305,22 @@ export default function QuestionCard({
                {/* Question Text */}
                <div className="mb-6">
                     <div
-                         className="text-gray-800 leading-relaxed"
+                         className="text-gray-800 leading-relaxed mb-4"
                          dangerouslySetInnerHTML={{ __html: question.question_text }}
                     />
+
+                    {/* Question Image - Display if available */}
+                    {hasQuestionImage(question.question_image) && (
+                         <div className="mt-4">
+                              <ExamImage
+                                   src={getQuestionImageUrl(question.question_image)}
+                                   alt={`Gambar soal ${questionNumber}`}
+                                   className="max-w-2xl mx-auto"
+                                   aspectRatio="auto"
+                                   priority={questionNumber === 1}
+                              />
+                         </div>
+                    )}
                </div>
 
                {/* Answer Options */}

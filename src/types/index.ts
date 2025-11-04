@@ -53,7 +53,9 @@ export interface Question {
      exam_id: number;
      question_type_id: string; // "0": Multiple Choice (Single), "1": Multiple Choice Complex, "2": True/False, "3": Essay
      question_text: string;
+     question_image?: string | null; // Path to question image (nullable)
      choices: string; // JSON string: {"A": "option A", "B": "option B", ...}
+     choices_images?: string | null; // JSON string: {"0": "path.jpg", "1": null, ...}
      answer_key: string; // JSON string array: "[\"A\",\"C\"]" for multiple choice
      points: string; // String format: "15.00"
      created_by: number; // User ID
@@ -66,7 +68,9 @@ export interface ParsedQuestion {
      exam_id: number;
      question_type_id: string;
      question_text: string;
+     question_image?: string | null; // Path to question image (nullable)
      choices: Record<string, string>; // Parsed choices object
+     choices_images?: Record<string, string | null> | null; // Parsed choices images object
      answer_key: string[]; // Parsed answer key array
      points: number; // Parsed points as number
      created_by: number;

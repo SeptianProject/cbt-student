@@ -9,6 +9,34 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // CBT Backend Storage - Production
+      {
+        protocol: 'https',
+        hostname: 'cbt-app.sagaradev.com',
+        port: '',
+        pathname: '/storage/**',
+      },
+      // CBT Backend Storage - Development
+      {
+        protocol: 'http',
+        hostname: 'cbt-app.me',
+        port: '8000',
+        pathname: '/storage/**',
+      },
+      // Local development
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/storage/**',
+      },
+      // Possible IP address
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8000',
+        pathname: '/storage/**',
+      },
     ],
   },
 };

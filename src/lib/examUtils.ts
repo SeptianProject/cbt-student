@@ -104,7 +104,9 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
                id: question.id,
                choices: question.choices,
                answer_key: question.answer_key,
-               points: question.points
+               points: question.points,
+               question_image: question.question_image,
+               choices_images: question.choices_images
           });
 
           const choices = parseChoices(question.choices);
@@ -120,18 +122,38 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
                }
           }
 
-          const result = {
+          // Parse choices_images if available
+          let choices_images: Record<string, string | null> | null = null;
+          if (question.choices_images) {
+               if (typeof question.choices_images === 'string') {
+                    try {
+                         choices_images = JSON.parse(question.choices_images);
+                         console.log('Parsed choices_images:', choices_images);
+                    } catch (error) {
+                         console.error('Failed to parse choices_images:', error);
+                         choices_images = null;
+                    }
+               } else if (typeof question.choices_images === 'object') {
+                    choices_images = question.choices_images as Record<string, string | null>;
+               }
+          }
+
+          const result: ParsedQuestion = {
                ...question,
                choices,
                answer_key,
-               points
+               points,
+               question_image: question.question_image || null,
+               choices_images
           };
 
           console.log('Parsed question result:', {
                id: result.id,
                choices: result.choices,
                answer_key: result.answer_key,
-               points: result.points
+               points: result.points,
+               has_question_image: !!result.question_image,
+               has_choices_images: !!result.choices_images
           });
 
           return result;
@@ -142,7 +164,9 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
                ...question,
                choices: {},
                answer_key: [],
-               points: 0
+               points: 0,
+               question_image: null,
+               choices_images: null
           };
      }
 };
