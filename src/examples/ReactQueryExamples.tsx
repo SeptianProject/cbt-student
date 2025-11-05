@@ -127,7 +127,6 @@ export function ExamStartExample({ examId }: { examId: number }) {
 
                // Start exam
                const examData = await startExamMutation.mutateAsync(examId)
-               console.log('Exam started:', examData)
 
                // ✅ Session token disimpan ke localStorage
                // ✅ Exam data di-cache oleh React Query
@@ -249,7 +248,6 @@ export function QuestionWithInstantSaveExample({
                     answer,
                     type: 'choice'
                })
-               console.log('Answer saved!')
           } catch (error) {
                console.error('Failed to save answer:', error)
           }

@@ -23,7 +23,6 @@ export function InactivityTimeoutProvider({
           timeout,
           excludeRoutes,
           onTimeout: () => {
-               console.log('🔴 User logged out due to inactivity');
           }
      });
 

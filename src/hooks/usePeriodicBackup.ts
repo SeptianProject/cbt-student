@@ -65,12 +65,6 @@ export const usePeriodicBackup = ({
                setBackupError(null);
 
                try {
-                    console.log('🕒 Periodic backup triggered...', {
-                         sessionId,
-                         answersCount: Object.keys(answers).length,
-                         backupNumber: backupCount + 1
-                    });
-
                     const result = await examService.saveAnswersBackup(
                          sessionId,
                          answers,
@@ -80,12 +74,6 @@ export const usePeriodicBackup = ({
                     if (result.success) {
                          setLastBackupTime(new Date());
                          setBackupCount(prev => prev + 1);
-                         console.log('✅ Periodic backup successful:', {
-                              backupNumber: backupCount + 1,
-                              timestamp: new Date().toISOString()
-                         });
-                    } else {
-                         console.warn('⚠️ Backup completed with warnings:', result.message);
                     }
                } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : 'Backup failed';

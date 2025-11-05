@@ -103,7 +103,6 @@ export const useAutoExamSelection = ({
                     localStorage.setItem('exam_id', nextExam.exam_id.toString());
                     localStorage.setItem('exam_duration', nextExam.duration.toString());
 
-                    console.log('Auto-selected exam:', nextExam);
 
                     // Small delay to prevent race condition
                     setTimeout(() => {

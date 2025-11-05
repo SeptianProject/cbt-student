@@ -75,7 +75,6 @@ export default function ExamPageWithReactQuery({ examId, slug }: ExamPageProps) 
           try {
                const examData = await startExamMutation.mutateAsync(examId)
                setExamStarted(true)
-               console.log('✅ Exam started:', examData)
                // Session token automatically saved to localStorage
           } catch (error) {
                console.error('❌ Failed to start exam:', error)
@@ -103,7 +102,6 @@ export default function ExamPageWithReactQuery({ examId, slug }: ExamPageProps) 
                               onSuccess: () => {
                                    setSaveStatus('saved')
                                    setTimeout(() => setSaveStatus('idle'), 2000)
-                                   console.log('✅ Auto-save successful')
                               },
                               onError: (error) => {
                                    setSaveStatus('error')
@@ -181,7 +179,6 @@ export default function ExamPageWithReactQuery({ examId, slug }: ExamPageProps) 
                     },
                })
 
-               console.log('✅ Exam submitted successfully')
                // Auto redirect to complete page (handled in hook)
           } catch (error) {
                console.error('❌ Submit failed:', error)

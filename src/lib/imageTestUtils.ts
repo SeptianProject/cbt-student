@@ -184,12 +184,6 @@ export const testImageUrls = {
  */
 export const logMockQuestions = () => {
      console.group('🧪 Mock Questions for Image Testing');
-     console.log('1. Question with image:', mockQuestionWithImage);
-     console.log('2. Question with choice images:', mockQuestionWithChoiceImages);
-     console.log('3. Question with both images:', mockQuestionWithBothImages);
-     console.log('4. Question without images:', mockQuestionWithoutImage);
-     console.log('5. Complex question with images:', mockComplexQuestionWithImages);
-     console.log('6. True/False with image:', mockTrueFalseWithImage);
      console.groupEnd();
 };
 

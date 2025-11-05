@@ -40,7 +40,6 @@ export default function ExamStartPage() {
           confirmSubmission,
           // retryFetchExam, // Not needed anymore - auto redirect instead
           goBackToExamList,
-          examDuration,
           isSubmitAllowed,
           // Auto-save status (per-answer)
           isSaving,
@@ -66,7 +65,6 @@ export default function ExamStartPage() {
      // Auto-redirect ke dashboard jika exam ended atau session invalid
      React.useEffect(() => {
           if (isExamEnded) {
-               console.log('🔄 Exam ended detected, redirecting to dashboard...');
                // Clear session data
                localStorage.removeItem('session_token');
                localStorage.removeItem('session_id');
@@ -152,7 +150,7 @@ export default function ExamStartPage() {
                     isSubmitAllowed={isSubmitAllowed}
                />
 
-               <ExamSubmitModal onConfirmSubmit={confirmSubmission} examDuration={examDuration} />
+               <ExamSubmitModal onConfirmSubmit={confirmSubmission} />
 
                {/* Submit notification when available */}
                {/* {isSubmitAllowed && (

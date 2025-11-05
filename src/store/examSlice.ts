@@ -69,8 +69,6 @@ export const fetchExam = createAsyncThunk(
                // Get session status to retrieve session_id
                const sessionStatus = await examService.getSessionStatus(Number(exam.exam_id));
 
-               console.log('📊 Session status response:', sessionStatus);
-
                return { exam, examData, sessionStatus, userId };
           } catch (error: unknown) {
                console.error('❌ Failed to fetch exam:', error);
@@ -126,8 +124,6 @@ const examSlice = createSlice({
           setAnswers(state: Draft<ExamState>, action: PayloadAction<{ questionId: number; answer: string | string[] }>) {
                const { questionId, answer } = action.payload;
 
-               console.log(`🔧 Redux setAnswers called for question ${questionId}:`, answer);
-
                // Pastikan answer tidak kosong atau undefined untuk menghindari masalah state
                if (answer !== undefined && answer !== null) {
                     state.answers[questionId] = {
@@ -135,8 +131,6 @@ const examSlice = createSlice({
                          answer,
                          is_flagged: state.answers[questionId]?.is_flagged || false,
                     };
-
-                    console.log(`✅ Answer saved in Redux for Q${questionId}. Total answers:`, Object.keys(state.answers).length);
                }
           },
           setFlag(state: Draft<ExamState>, action: PayloadAction<{ questionId: number; isFlagged: boolean }>) {
@@ -167,6 +161,10 @@ const examSlice = createSlice({
                // Clear randomization data saat reset
                if (state.currentExam?.exam_id) {
                     clearRandomizationData(state.currentExam.exam_id);
+                    // ✅ Clear timer data from localStorage
+                    if (typeof window !== 'undefined') {
+                         localStorage.removeItem(`exam_timer_${state.currentExam.exam_id}`);
+                    }
                }
                // Clear session data from localStorage
                if (typeof window !== 'undefined') {
@@ -203,7 +201,6 @@ const examSlice = createSlice({
                     // Jika session invalid (422), langsung set exam ended
                     // Ini akan trigger auto-redirect ke dashboard di useExamLogic
                     if (error?.type === 'SESSION_INVALID') {
-                         console.log('🔄 Session invalid detected, marking exam as ended for auto-redirect');
                          state.isExamEnded = true;
                          state.sessionStatus = 'submitted'; // or 'expired'
                     }
@@ -231,19 +228,14 @@ const examSlice = createSlice({
                          // Store session_id from sessionStatus response (prioritas lebih tinggi)
                          if (action.payload.sessionStatus?.session_id) {
                               state.sessionId = action.payload.sessionStatus.session_id;
-                              console.log('✅ Session ID retrieved from status:', state.sessionId);
                          } else if (action.payload.examData.session_id) {
                               // Fallback ke examData jika ada
                               state.sessionId = action.payload.examData.session_id;
-                              console.log('✅ Session ID retrieved from examData:', state.sessionId);
-                         } else {
-                              console.warn('⚠️ No session_id found in response');
                          }
 
                          // When starting exam, always set status to 'progress'
                          // Don't use status from getSessionStatus as it might show old session
                          state.sessionStatus = 'progress';
-                         console.log('✅ Session status set to progress on exam start');
 
                          // Parse questions dalam urutan original
                          const parsedQuestions = parseExamQuestions(action.payload.examData.exam as Question[]);
@@ -299,6 +291,11 @@ const examSlice = createSlice({
                     state.isExamEnded = true;
                     state.showSubmitModal = false;
                     state.sessionStatus = 'submitted';
+
+                    // ✅ Clean up timer from localStorage
+                    if (typeof window !== 'undefined' && state.currentExam?.exam_id) {
+                         localStorage.removeItem(`exam_timer_${state.currentExam.exam_id}`);
+                    }
 
                     // Store submit result if available - payload contains full response with data field
                     if (action.payload?.data) {
@@ -361,7 +358,6 @@ const examSlice = createSlice({
                     // Update session_id jika ada di response
                     if (action.payload.session_id) {
                          state.sessionId = action.payload.session_id;
-                         console.log('✅ Session ID updated from checkSessionStatus:', state.sessionId);
                     }
                });
      },

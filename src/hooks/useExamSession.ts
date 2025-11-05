@@ -18,7 +18,6 @@ export const useExamSession = ({ examId, checkInterval = 30000, enabled = true }
      // Debug logging
      useEffect(() => {
           if (process.env.NODE_ENV === 'development') {
-               console.log('useExamSession:', { examId, enabled, hasSessionToken: !!localStorage.getItem('session_token') });
           }
      }, [examId, enabled]);
 
@@ -28,7 +27,6 @@ export const useExamSession = ({ examId, checkInterval = 30000, enabled = true }
           // Check if session token exists before making API call
           const sessionToken = localStorage.getItem('session_token');
           if (!sessionToken) {
-               console.log('No session token found, skipping session status check');
                return;
           }
 
@@ -56,7 +54,6 @@ export const useExamSession = ({ examId, checkInterval = 30000, enabled = true }
                          setError(err.message);
                          console.error('Session status check failed:', err);
                     } else {
-                         console.log('Session check skipped - no valid session:', err.message);
                     }
                }
           } finally {

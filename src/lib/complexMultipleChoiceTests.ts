@@ -51,7 +51,6 @@ const testCases = [
  * Jalankan test cases
  */
 function runTests() {
-     console.log("🧪 Running Complex Multiple Choice Scoring Tests...\n");
 
      testCases.forEach((testCase, index) => {
           // Uncomment this line when testing in browser with actual imports:
@@ -70,14 +69,6 @@ function runTests() {
 
           const passed = actualScore === testCase.expectedScore;
 
-          console.log(`Test ${index + 1}: ${testCase.name}`);
-          console.log(`  Correct Answers: [${testCase.correctAnswers.join(', ')}]`);
-          console.log(`  Selected Answers: [${testCase.selectedAnswers.join(', ')}]`);
-          console.log(`  Points per Answer: ${pointsPerAnswer}`);
-          console.log(`  Correct Selected: ${correctSelected}`);
-          console.log(`  Expected Score: ${testCase.expectedScore}`);
-          console.log(`  Actual Score: ${actualScore}`);
-          console.log(`  Status: ${passed ? '✅ PASS' : '❌ FAIL'}\n`);
      });
 }
 
@@ -85,7 +76,6 @@ function runTests() {
  * Test getComplexMultipleChoiceInfo function
  */
 function testScoringInfo() {
-     console.log("🔍 Testing Scoring Info Function...\n");
 
      const testInfo = {
           totalPoints: 3,
@@ -101,8 +91,6 @@ function testScoringInfo() {
           description: `Setiap jawaban benar bernilai ${pointsPerAnswer} poin (${testInfo.totalPoints} ÷ ${testInfo.correctAnswers.length} = ${pointsPerAnswer})`
      };
 
-     console.log("Scoring Info Result:", info);
-     console.log("✅ Scoring info function working correctly\n");
 }
 
 // Export for manual testing
@@ -113,9 +101,6 @@ if (typeof window !== 'undefined') {
           testCases
      };
 
-     console.log("🎯 Complex Multiple Choice Tests loaded!");
-     console.log("Run: testComplexMultipleChoice.runTests()");
-     console.log("Run: testComplexMultipleChoice.testScoringInfo()");
 }
 
 // For Node.js testing (if needed)

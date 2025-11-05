@@ -51,15 +51,9 @@ export const useRestoreAnswers = ({ sessionId, enabled = true }: UseRestoreAnswe
                setRestoreError(null);
 
                try {
-                    console.log('🔄 Starting restore process for session:', sessionId);
-
                     const savedAnswers = await examService.getSavedAnswers(sessionId);
 
-                    console.log('📦 Received saved answers from backend:', savedAnswers);
-
                     if (Object.keys(savedAnswers).length > 0) {
-                         console.log('✅ Found saved answers:', Object.keys(savedAnswers).length, 'questions');
-
                          let multipleChoiceCount = 0;
                          let essayCount = 0;
 
@@ -67,8 +61,6 @@ export const useRestoreAnswers = ({ sessionId, enabled = true }: UseRestoreAnswe
                          // This will automatically update UI because QuestionCard subscribes to Redux
                          Object.entries(savedAnswers).forEach(([questionIdStr, answer]) => {
                               const questionId = parseInt(questionIdStr);
-
-                              console.log(`🔄 Dispatching answer for Q${questionId}:`, answer.answer);
 
                               // Dispatch to Redux - UI will auto-update
                               dispatch(setAnswers({
@@ -93,11 +85,7 @@ export const useRestoreAnswers = ({ sessionId, enabled = true }: UseRestoreAnswe
                          };
 
                          setRestoreStats(stats);
-
-                         console.log('✅ Answers restored successfully!', stats);
-                         console.log('📝 UI pilihan jawaban akan ter-update otomatis via Redux');
                     } else {
-                         console.log('ℹ️ No saved answers found (fresh exam start)');
                          setRestoreStats({
                               totalRestored: 0,
                               multipleChoiceCount: 0,

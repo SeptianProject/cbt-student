@@ -10,7 +10,6 @@ export const authService = {
           if (typeof window !== 'undefined' && response.data.token) {
                localStorage.setItem('api_token', response.data.token);
           }
-          console.log("data login", response.data);
           return response.data;
      },
 
@@ -47,7 +46,6 @@ export const authService = {
                     Authorization: `Bearer ${localStorage.getItem('api_token')}`
                }
           });
-          console.log("data user", response.data);
           return response.data;
      }
 };

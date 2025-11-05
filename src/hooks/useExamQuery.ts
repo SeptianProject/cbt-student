@@ -18,7 +18,6 @@ export const useStartExamMutation = () => {
      return useMutation({
           mutationFn: (examId: number) => examService.examStart(examId),
           onSuccess: (data, examId) => {
-               console.log('Exam started successfully:', data);
 
                // Cache exam data
                queryClient.setQueryData(examKeys.detail(examId), data);
@@ -40,7 +39,6 @@ export const useStartExamBySlugMutation = () => {
           mutationFn: ({ slug, assignedExams }: { slug: string; assignedExams: AssignedExam[] }) =>
                examService.examStartBySlug(slug, assignedExams),
           onSuccess: (data) => {
-               console.log('Exam started by slug:', data);
 
                // Get exam_id from localStorage (set by examStartBySlug)
                const examId = localStorage.getItem('exam_id');
@@ -58,7 +56,6 @@ export const useStartExamSafeMutation = () => {
      return useMutation({
           mutationFn: (examId: number) => examService.examStartSafe(examId),
           onSuccess: (data, examId) => {
-               console.log('Exam started safely:', data);
                queryClient.setQueryData(examKeys.detail(examId), data);
           },
      });
@@ -71,7 +68,6 @@ export const useClearExamSessionMutation = () => {
      return useMutation({
           mutationFn: (examId: number) => examService.clearExamSession(examId),
           onSuccess: (_, examId) => {
-               console.log('Exam session cleared');
 
                // Invalidate all related queries
                queryClient.invalidateQueries({ queryKey: examKeys.detail(examId) });
@@ -99,7 +95,6 @@ export const useSubmitExamMutation = () => {
                options?: ExamSubmitOptions;
           }) => examService.submitExam(examId, answers, questions, options),
           onSuccess: (data, variables) => {
-               console.log('Exam submitted successfully:', data);
 
                // Invalidate queries
                queryClient.invalidateQueries({ queryKey: examKeys.detail(variables.examId) });
@@ -155,7 +150,6 @@ export const useUpdateAnswerMutation = () => {
                type: 'choice' | 'essay';
           }) => examService.updateAnswer(sessionId, questionId, answer, type),
           onSuccess: (data) => {
-               console.log('Answer updated successfully:', data);
           },
           onError: (error: Error) => {
                console.error('Failed to update answer:', error.message);
@@ -168,7 +162,6 @@ export const useForceEndSessionMutation = () => {
      return useMutation({
           mutationFn: (examId: number) => examService.forceEndSession(examId),
           onSuccess: () => {
-               console.log('Session force ended');
           },
      });
 };
@@ -186,7 +179,6 @@ export const useAutoSaveAnswersMutation = () => {
                questions: ParsedQuestion[];
           }) => examService.autoSaveAnswers(examId, answers, questions),
           onSuccess: (data) => {
-               console.log('Auto-save successful:', data);
           },
           onError: (error: Error) => {
                console.error('Auto-save failed:', error.message);

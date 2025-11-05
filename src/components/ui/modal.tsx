@@ -7,9 +7,10 @@ interface ModalProps {
      isOpen: boolean;
      onClose: () => void;
      children: ReactNode;
+     preventClose?: boolean; // ✅ Add prop to prevent closing
 }
 
-export function Modal({ isOpen, onClose, children }: ModalProps) {
+export function Modal({ isOpen, onClose, children, preventClose = false }: ModalProps) {
      useEffect(() => {
           if (isOpen) {
                document.body.style.overflow = 'hidden';
@@ -24,7 +25,8 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
 
      useEffect(() => {
           const handleEscape = (e: KeyboardEvent) => {
-               if (e.key === 'Escape') {
+               // ✅ Only allow Escape key if not prevented
+               if (e.key === 'Escape' && !preventClose) {
                     onClose();
                }
           };
@@ -36,16 +38,23 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
           return () => {
                document.removeEventListener('keydown', handleEscape);
           };
-     }, [isOpen, onClose]);
+     }, [isOpen, onClose, preventClose]);
 
      if (!isOpen) return null;
+
+     // ✅ Only call onClose if not prevented
+     const handleBackdropClick = () => {
+          if (!preventClose) {
+               onClose();
+          }
+     };
 
      return createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center">
                {/* Backdrop */}
                <div
                     className="fixed inset-0 bg-black opacity-50 transition-opacity"
-                    onClick={onClose}
+                    onClick={handleBackdropClick}
                />
 
                {/* Modal Content */}

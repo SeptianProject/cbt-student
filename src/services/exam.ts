@@ -33,8 +33,7 @@ export const examService = {
                          }
                     });
                }
-          } catch (error) {
-               console.log('Error clearing session (might be expected):', error);
+          } catch {
                // Ignore errors - session might already be expired or invalid
           } finally {
                // Always clear local session data
@@ -363,7 +362,7 @@ export const examService = {
                     });
                }
           } catch {
-               console.log('Session force end completed (errors are expected)');
+               // Errors are expected during session force end
           }
 
           // Always clear local storage
@@ -410,12 +409,10 @@ export const examService = {
      // Uses GET endpoint: /api/siswa/exam-session/{sessionId}/answers
      getSavedAnswers: async (sessionId: number): Promise<Record<number, StudentAnswer>> => {
           if (!sessionId || sessionId <= 0) {
-               console.warn('⚠️ Invalid session ID for getSavedAnswers');
                return {};
           }
 
           try {
-               console.log('🔄 Fetching saved answers from temporary table:', { sessionId });
 
                // Backend might return two different formats:
                // Format 1: {success: true, data: {session_id, answers, essay_answers}}
@@ -435,11 +432,9 @@ export const examService = {
                     }
                });
 
-               console.log('✅ Saved answers response:', response.data);
-
                const savedAnswers: Record<number, StudentAnswer> = {};
 
-               // 🔥 Handle both response formats
+               // Handle both response formats
                let answersData: Record<string, string> | undefined;
                let essayAnswersData: Record<string, string> | undefined;
                let isEmpty: boolean;
@@ -448,51 +443,32 @@ export const examService = {
                const isWrappedFormat = 'success' in response.data && response.data.success;
                const isDirectFormat = 'session_id' in response.data && !('success' in response.data);
 
-               console.log('🔍 Response structure:', {
-                    isWrappedFormat,
-                    isDirectFormat
-               });
-
                if (isWrappedFormat && 'data' in response.data && response.data.data) {
                     // Format 1: Wrapped format
-                    console.log('📦 Using wrapped format (success + data)');
                     answersData = response.data.data.answers;
                     essayAnswersData = response.data.data.essay_answers;
                     isEmpty = response.data.data.is_empty;
                } else if (isDirectFormat) {
                     // Format 2: Direct format (backend return langsung tanpa wrapper)
-                    console.log('📦 Using direct format (no wrapper)');
                     const directData = response.data as DirectResponseFormat;
                     answersData = directData.answers;
                     essayAnswersData = directData.essay_answers;
                     isEmpty = directData.is_empty;
                } else {
-                    console.error('❌ Unknown response format:', response.data);
+                    console.error('Unknown response format:', response.data);
                     return {};
                }
 
-               console.log('📦 Processing answers:', {
-                    answersData,
-                    essayAnswersData,
-                    isEmpty,
-                    answersType: typeof answersData,
-                    answersIsObject: typeof answersData === 'object' && !Array.isArray(answersData)
-               });
-
                // Skip if empty
                if (isEmpty) {
-                    console.log('ℹ️ No saved answers found (empty session)');
                     return {};
                }
 
                // Process multiple choice answers
                if (answersData && typeof answersData === 'object' && !Array.isArray(answersData)) {
-                    console.log('🔄 Processing multiple choice answers:', answersData);
                     Object.entries(answersData).forEach(([questionIdStr, answerValue]) => {
                          const questionId = parseInt(questionIdStr);
                          const answerStr = String(answerValue || '');
-
-                         console.log(`   Processing Q${questionId}: "${answerStr}"`);
 
                          if (answerStr.trim()) {
                               // Convert "B,C,D" to ["B", "C", "D"] or keep single "A"
@@ -500,40 +476,27 @@ export const examService = {
                                    ? answerStr.split(',').map(a => a.trim()).filter(a => a)
                                    : answerStr;
 
-                              console.log(`   ✅ Parsed answer for Q${questionId}:`, parsedAnswer);
-
                               savedAnswers[questionId] = {
                                    question_id: questionId,
                                    answer: parsedAnswer
                               };
                          }
                     });
-               } else {
-                    console.warn('⚠️ Answers data is not a valid object:', answersData);
                }
 
                // Process essay answers
                if (essayAnswersData && typeof essayAnswersData === 'object' && !Array.isArray(essayAnswersData)) {
-                    console.log('🔄 Processing essay answers:', essayAnswersData);
                     Object.entries(essayAnswersData).forEach(([questionIdStr, answerValue]) => {
                          const questionId = parseInt(questionIdStr);
                          const essayAnswer = String(answerValue || '');
 
                          if (essayAnswer.trim()) {
-                              console.log(`   ✅ Parsed essay for Q${questionId}`);
                               savedAnswers[questionId] = {
                                    question_id: questionId,
                                    answer: essayAnswer
                               };
                          }
                     });
-               }
-
-               const totalRestored = Object.keys(savedAnswers).length;
-               if (totalRestored > 0) {
-                    console.log(`✅ Restored ${totalRestored} answers from temporary table:`, savedAnswers);
-               } else {
-                    console.log('ℹ️ No valid answers to restore');
                }
 
                return savedAnswers;
@@ -549,20 +512,15 @@ export const examService = {
      // Uses GET endpoint: /api/siswa/exam-session/{sessionId}/compact-answers
      getCompactAnswers: async (sessionId: number): Promise<Record<number, StudentAnswer>> => {
           if (!sessionId || sessionId <= 0) {
-               console.warn('⚠️ Invalid session ID for getCompactAnswers');
                return {};
           }
 
           try {
-               console.log('🔄 Fetching compact answers:', { sessionId });
-
                const response = await api.get<CompactAnswersResponse>(`/siswa/exam-session/${sessionId}/compact-answers`, {
                     headers: {
                          Authorization: `Bearer ${localStorage.getItem('api_token')}`
                     }
                });
-
-               console.log('✅ Compact answers response:', response.data);
 
                const savedAnswers: Record<number, StudentAnswer> = {};
 
@@ -585,8 +543,6 @@ export const examService = {
                               };
                          }
                     });
-
-                    console.log(`✅ Restored ${Object.keys(savedAnswers).length} answers from compact format`);
                }
 
                return savedAnswers;
@@ -600,7 +556,6 @@ export const examService = {
      // Uses GET endpoint: /api/siswa/exam-session/{sessionId}/progress
      getSessionProgress: async (sessionId: number): Promise<SessionProgressResponse['data'] | null> => {
           if (!sessionId || sessionId <= 0) {
-               console.warn('⚠️ Invalid session ID for getSessionProgress');
                return null;
           }
 
@@ -634,8 +589,6 @@ export const examService = {
           }
 
           try {
-               console.log('🔄 Restoring answers from backup...', { sessionId, answersCount: Object.keys(answers).length });
-
                // Separate multiple choice and essay answers
                const multipleChoiceAnswers: Record<string, string> = {};
                const essayAnswers: Record<string, string> = {};
@@ -677,12 +630,6 @@ export const examService = {
                     essay_json: JSON.stringify(essayAnswers)
                };
 
-               console.log('📡 Restore payload:', {
-                    session_id: sessionId,
-                    answers_count: Object.keys(multipleChoiceAnswers).length,
-                    essays_count: Object.keys(essayAnswers).length
-               });
-
                const response = await api.post<RestoreAnswersResponse>(
                     '/siswa/exam-session/restore-answers',
                     payload,
@@ -692,8 +639,6 @@ export const examService = {
                          }
                     }
                );
-
-               console.log('✅ Restore response:', response.data);
 
                if (!response.data?.success) {
                     throw new Error('Restore failed: Invalid response from server');
@@ -721,13 +666,10 @@ export const examService = {
           questions: ParsedQuestion[]
      ): Promise<PeriodicBackupResponse> => {
           if (!sessionId || sessionId <= 0) {
-               console.warn('⚠️ Invalid session ID for backup');
                return { success: false, message: 'Invalid session ID' };
           }
 
           try {
-               console.log('💾 Creating periodic backup...', { sessionId, answersCount: Object.keys(answers).length });
-
                // Separate multiple choice and essay answers
                const multipleChoiceAnswers: Record<string, string> = {};
                const essayAnswers: Record<string, string> = {};
@@ -764,7 +706,6 @@ export const examService = {
 
                // Skip backup if no answers to save
                if (Object.keys(multipleChoiceAnswers).length === 0 && Object.keys(essayAnswers).length === 0) {
-                    console.log('ℹ️ No answers to backup');
                     return { success: true, message: 'No answers to backup' };
                }
 
@@ -775,12 +716,6 @@ export const examService = {
                     essay_json: JSON.stringify(essayAnswers)
                };
 
-               console.log('💾 Backup payload:', {
-                    session_id: sessionId,
-                    answers_count: Object.keys(multipleChoiceAnswers).length,
-                    essays_count: Object.keys(essayAnswers).length
-               });
-
                const response = await api.post<PeriodicBackupResponse>(
                     '/siswa/exam-session/save-answers',
                     payload,
@@ -790,8 +725,6 @@ export const examService = {
                          }
                     }
                );
-
-               console.log('✅ Backup successful:', response.data);
 
                return response.data || {
                     success: true,

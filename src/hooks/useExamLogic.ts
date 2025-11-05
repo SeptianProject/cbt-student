@@ -192,7 +192,8 @@ export const useExamLogic = () => {
      }, [dispatch]);
 
      const confirmSubmission = useCallback(() => {
-          dispatch(setShowSubmitModal(false));
+          // ✅ Don't close modal here - let it stay open during submission
+          // Modal will auto-close when submission completes or user is redirected
           if (currentExam?.exam_id) {
                dispatch(submitExam({
                     examId: currentExam.exam_id,

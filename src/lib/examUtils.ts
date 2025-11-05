@@ -14,7 +14,7 @@ const safeJSONParse = (value: unknown, fallback: unknown = null) => {
 
 // Helper function to parse choices from various formats
 const parseChoices = (choices: unknown): Record<string, string> => {
-     // If already an object, return as is
+     // If already an object (not array), return as is
      if (typeof choices === 'object' && choices !== null && !Array.isArray(choices)) {
           return choices as Record<string, string>;
      }
@@ -22,6 +22,18 @@ const parseChoices = (choices: unknown): Record<string, string> => {
      // If string, try to parse as JSON first
      if (typeof choices === 'string') {
           const parsed = safeJSONParse(choices);
+
+          // ✅ Handle array format from API: ["Option A", "Option B", "Option C", "Option D"]
+          if (Array.isArray(parsed)) {
+               const result: Record<string, string> = {};
+               parsed.forEach((item, index) => {
+                    const key = String.fromCharCode(65 + index); // A, B, C, D...
+                    result[key] = String(item);
+               });
+               return result;
+          }
+
+          // Handle object format: {"A": "Option A", "B": "Option B"}
           if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
                return parsed;
           }
@@ -65,36 +77,119 @@ const parseChoices = (choices: unknown): Record<string, string> => {
           }
      }
 
+     // ✅ Handle direct array format (not stringified)
+     if (Array.isArray(choices)) {
+          const result: Record<string, string> = {};
+          choices.forEach((item, index) => {
+               const key = String.fromCharCode(65 + index); // A, B, C, D...
+               result[key] = String(item);
+          });
+          return result;
+     }
+
      return {};
+};
+
+// Helper function to parse choices images from various formats
+// ✅ Convert array format to object with letter keys: ["path1.png", "path2.png"] -> {"A": "path1.png", "B": "path2.png"}
+const parseChoicesImages = (choicesImages: unknown): Record<string, string | null> | null => {
+     if (!choicesImages) return null;
+
+     // If already an object (not array), return as is
+     if (typeof choicesImages === 'object' && choicesImages !== null && !Array.isArray(choicesImages)) {
+          return choicesImages as Record<string, string | null>;
+     }
+
+     // If string, try to parse as JSON first
+     if (typeof choicesImages === 'string') {
+          const parsed = safeJSONParse(choicesImages);
+
+          // ✅ Handle array format from API: ["path1.png", "path2.png", null, "path4.png"]
+          if (Array.isArray(parsed)) {
+               const result: Record<string, string | null> = {};
+               parsed.forEach((item, index) => {
+                    const key = String.fromCharCode(65 + index); // A, B, C, D...
+                    result[key] = item ? String(item) : null;
+               });
+               return result;
+          }
+
+          // Handle object format: {"A": "path1.png", "B": null}
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+               return parsed;
+          }
+     }
+
+     // ✅ Handle direct array format (not stringified)
+     if (Array.isArray(choicesImages)) {
+          const result: Record<string, string | null> = {};
+          choicesImages.forEach((item, index) => {
+               const key = String.fromCharCode(65 + index); // A, B, C, D...
+               result[key] = item ? String(item) : null;
+          });
+          return result;
+     }
+
+     return null;
 };
 
 // Helper function to parse answer keys from various formats
 // ✅ Mendukung format baru dari backend: '[0]', '[1,2]', dll (index numerik dalam JSON array)
+// ✅ Konversi index numerik ke huruf: [0] -> ["A"], [1, 2] -> ["B", "C"]
 const parseAnswerKey = (answerKey: unknown): string[] => {
      // If already an array, convert all elements to string
      if (Array.isArray(answerKey)) {
-          return answerKey.map(item => String(item));
+          return answerKey.map(item => {
+               const val = String(item);
+               // ✅ Convert numeric index to letter: "0" -> "A", "1" -> "B", etc.
+               if (/^\d+$/.test(val)) {
+                    const numIndex = parseInt(val);
+                    return String.fromCharCode(65 + numIndex);
+               }
+               return val;
+          });
      }
 
      // If string, try to parse as JSON first
      if (typeof answerKey === 'string') {
           const parsed = safeJSONParse(answerKey);
           if (Array.isArray(parsed)) {
-               // ✅ Convert parsed array items to string (mendukung [0] -> ["0"])
-               return parsed.map(item => String(item));
+               // ✅ Convert parsed array items, handling numeric indices
+               return parsed.map(item => {
+                    const val = String(item);
+                    // ✅ Convert numeric index to letter: "0" -> "A", "1" -> "B", etc.
+                    if (/^\d+$/.test(val)) {
+                         const numIndex = parseInt(val);
+                         return String.fromCharCode(65 + numIndex);
+                    }
+                    return val;
+               });
           }
 
           // Parse as comma/pipe/semicolon separated values
           const trimmed = answerKey.trim();
           if (trimmed) {
                const items = trimmed.split(/[,|;]/).map(item => item.trim()).filter(item => item);
-               return items.length > 0 ? items : [trimmed];
+               return items.length > 0 ? items.map(item => {
+                    // ✅ Convert numeric index to letter
+                    if (/^\d+$/.test(item)) {
+                         const numIndex = parseInt(item);
+                         return String.fromCharCode(65 + numIndex);
+                    }
+                    return item;
+               }) : [trimmed];
           }
      }
 
-     // For other types, convert to string
+     // For other types, convert to string and check if numeric
      if (answerKey !== null && answerKey !== undefined) {
-          return [String(answerKey)];
+          const val = String(answerKey);
+          // ✅ Convert numeric index to letter
+          if (/^\d+$/.test(val)) {
+               const numIndex = parseInt(val);
+               return [String.fromCharCode(65 + numIndex)];
+          }
+          return [val];
      }
 
      return [];
@@ -131,21 +226,13 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
                }
           }
 
-          // Parse choices_images if available
-          let choices_images: Record<string, string | null> | null = null;
-          if (question.choices_images) {
-               if (typeof question.choices_images === 'string') {
-                    try {
-                         choices_images = JSON.parse(question.choices_images);
-                         console.log('Parsed choices_images:', choices_images);
-                    } catch (error) {
-                         console.error('Failed to parse choices_images:', error);
-                         choices_images = null;
-                    }
-               } else if (typeof question.choices_images === 'object') {
-                    choices_images = question.choices_images as Record<string, string | null>;
-               }
-          }
+          // ✅ Parse choices_images using the new helper function
+          const choices_images = parseChoicesImages(question.choices_images);
+
+          console.log('✅ Parsed choices_images:', {
+               original: question.choices_images,
+               parsed: choices_images
+          });
 
           const result: ParsedQuestion = {
                ...question,

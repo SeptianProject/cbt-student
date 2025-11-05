@@ -11,7 +11,6 @@ export const useExamSessionManager = () => {
           setIsClearing(true);
           try {
                await examService.forceEndSession(examId);
-               console.log('Session cleared successfully');
                return true;
           } catch (error) {
                console.error('Error clearing session:', error);
@@ -25,7 +24,6 @@ export const useExamSessionManager = () => {
           setIsChecking(true);
           try {
                const hasActiveSession = await examService.checkActiveSession(examId);
-               console.log('Active session check result:', hasActiveSession);
                return hasActiveSession;
           } catch (error) {
                console.error('Error checking session:', error);

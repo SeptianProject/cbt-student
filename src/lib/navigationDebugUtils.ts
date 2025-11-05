@@ -10,16 +10,13 @@ export const navigationDebugUtils = {
       */
      logQuestionMapping: (questions: ParsedQuestion[], answers: Record<number, StudentAnswer>) => {
           if (process.env.NODE_ENV === 'development') {
-               console.log('[NAV DEBUG] Question Mapping:');
                questions.forEach((question, index) => {
                     const questionNumber = index + 1;
                     const hasAnswer = !!answers[question.id];
                     const answerValue = answers[question.id]?.answer;
 
-                    console.log(`[NAV DEBUG] Q${questionNumber} -> ID:${question.id} | HasAnswer:${hasAnswer} | Value:`, answerValue);
                });
 
-               console.log('[NAV DEBUG] Answers by ID:', answers);
           }
      },
 
@@ -55,7 +52,6 @@ export const navigationDebugUtils = {
       */
      logAllQuestionStatus: (questions: ParsedQuestion[], answers: Record<number, StudentAnswer>) => {
           if (process.env.NODE_ENV === 'development') {
-               console.log('[NAV DEBUG] Question Status Summary:');
 
                let answeredCount = 0;
                let flaggedCount = 0;
@@ -65,7 +61,6 @@ export const navigationDebugUtils = {
                     const questionNumber = index + 1;
                     const validation = navigationDebugUtils.validateAnswerStatus(question.id, answers[question.id]);
 
-                    console.log(`[NAV DEBUG] Q${questionNumber} (ID:${question.id}): ${validation.status} - ${validation.reason}`);
 
                     switch (validation.status) {
                          case 'answered': answeredCount++; break;
@@ -74,7 +69,6 @@ export const navigationDebugUtils = {
                     }
                });
 
-               console.log(`[NAV DEBUG] Summary: Answered=${answeredCount}, Flagged=${flaggedCount}, Unanswered=${unansweredCount}`);
           }
      }
 };

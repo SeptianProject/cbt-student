@@ -19,7 +19,6 @@ export const useEnsureSessionId = () => {
           // 3. Session ID masih null
           // 4. Tidak sedang loading
           if (currentExam && sessionStatus === 'progress' && !sessionId && !isLoading) {
-               console.log('⚠️ Session ID is null, fetching from getSessionStatus...');
                dispatch(checkSessionStatus(currentExam.exam_id));
           }
      }, [sessionId, currentExam, sessionStatus, isLoading, dispatch]);

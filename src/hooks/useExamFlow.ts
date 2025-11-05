@@ -20,14 +20,11 @@ export const useExamFlow = () => {
           if (saved) {
                try {
                     const statuses = JSON.parse(saved);
-                    console.log('Retrieved exam statuses:', statuses);
                     return statuses;
                } catch {
-                    console.log('Failed to parse exam statuses from localStorage');
                     return [];
                }
           }
-          console.log('No exam statuses found in localStorage');
           return [];
      }, []);
 
@@ -55,33 +52,19 @@ export const useExamFlow = () => {
      // Find next exam in sequence
      const findNextExam = useCallback((exams: AssignedExam[], completedExamId?: number): AssignedExam | null => {
           if (!exams || exams.length === 0) {
-               console.log('No exams available');
                return null;
           }
 
           const statuses = getExamStatuses();
-          console.log('Finding next exam:', {
-               totalExams: exams.length,
-               completedExamId,
-               statuses: statuses.map(s => ({ id: s.exam_id, status: s.status }))
-          });
 
           if (completedExamId) {
                const currentIndex = exams.findIndex(exam => exam.exam_id === completedExamId);
-               console.log('Current exam index:', currentIndex, 'out of', exams.length);
 
                if (currentIndex >= 0 && currentIndex < exams.length - 1) {
                     const nextExam = exams[currentIndex + 1];
                     const nextStatus = statuses.find(s => s.exam_id === nextExam.exam_id);
 
-                    console.log('Checking next exam:', {
-                         examId: nextExam.exam_id,
-                         title: nextExam.title,
-                         status: nextStatus?.status || 'not_started'
-                    });
-
                     if (!nextStatus || nextStatus.status !== 'completed') {
-                         console.log('Found next exam:', nextExam.title);
                          return nextExam;
                     }
                }
@@ -91,12 +74,10 @@ export const useExamFlow = () => {
           for (const exam of exams) {
                const status = statuses.find(s => s.exam_id === exam.exam_id);
                if (!status || status.status !== 'completed') {
-                    console.log('Found incomplete exam:', exam.title);
                     return exam;
                }
           }
 
-          console.log('No next exam found - all completed');
           return null;
      }, [getExamStatuses]);
 

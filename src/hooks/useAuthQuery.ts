@@ -26,7 +26,6 @@ export const useLoginMutation = () => {
                // Invalidate and refetch user data
                queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
 
-               console.log('Login successful:', data);
                router.push('/dashboard');
           },
           onError: (error: Error) => {
@@ -50,7 +49,6 @@ export const useLogoutMutation = () => {
                // Clear all queries
                queryClient.clear();
 
-               console.log('Logout successful');
                router.push('/');
           },
           onError: (error: Error) => {

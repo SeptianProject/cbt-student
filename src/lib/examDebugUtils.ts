@@ -11,9 +11,7 @@ export const examDebugUtils = {
      logAnswers: (answers: Record<number, StudentAnswer>, questionId?: number) => {
           if (process.env.NODE_ENV === 'development') {
                if (questionId) {
-                    console.log(`[EXAM DEBUG] Answer untuk question ${questionId}:`, answers[questionId]);
                } else {
-                    console.log('[EXAM DEBUG] Semua answers:', answers);
                }
           }
      },
@@ -163,7 +161,6 @@ export const examDebugUtils = {
           });
 
           if (process.env.NODE_ENV === 'development' && changes.length > 0) {
-               console.log('[EXAM DEBUG] Answer changes detected:', changes);
           }
 
           return changes;

@@ -12,7 +12,6 @@ export function useExam() {
           mutationFn: examService.examStart,
           onSuccess: (data) => {
                setExamData(data);
-               console.log('Exam started successfully:', data);
           },
           onError: (error) => {
                console.error('Failed to start exam:', error);

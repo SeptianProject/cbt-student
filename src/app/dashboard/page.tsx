@@ -133,14 +133,16 @@ const DashboardPage = () => {
           )}
 
           <div className="mt-6 max-w-md w-full space-y-3">
-            <Button
-              variant="default"
-              onClick={handleContinue}
-              className='w-full text-base font-semibold'
-            >
-              <ArrowRight className="w-5 h-5 mr-2" />
-              Lanjutkan ke Ujian
-            </Button>
+            {userData?.assigned && userData.assigned.length > 0 && (
+              <Button
+                variant="default"
+                onClick={handleContinue}
+                className='w-full text-base font-semibold'
+              >
+                <ArrowRight className="w-5 h-5 mr-2" />
+                Lanjutkan ke Ujian
+              </Button>
+            )}
 
             <LogoutButton
               variant="outline"

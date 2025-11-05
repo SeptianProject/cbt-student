@@ -90,9 +90,6 @@ const ExamContent: React.FC<ExamContentProps> = ({ userData }) => {
      };
 
      React.useEffect(() => {
-          console.log('User Data in Content:', userData)
-          console.log('Exam ID from localStorage in Content:', examId)
-          console.log('Current Exam Data:', currentExam)
      }, [examId, userData, currentExam])
 
      if (!examId && userData?.assigned && userData.assigned.length > 0) {

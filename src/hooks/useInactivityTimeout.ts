@@ -39,8 +39,6 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
 
           hasLoggedOutRef.current = true;
 
-          console.log('⏰ INACTIVITY TIMEOUT - AUTO LOGOUT');
-          console.log('🔴 Logging out user and clearing all sessions...');
 
           // Clear countdown interval if exists
           if (countdownIntervalRef.current) {
@@ -56,12 +54,10 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
 
           // Clear auth state from Redux
           dispatch(clearAuth());
-          console.log('✅ Redux auth state cleared');
 
           // Logout and clear sessions from backend
           try {
                await authService.logout();
-               console.log('✅ Backend session cleared');
           } catch (error) {
                console.error('❌ Error during logout:', error);
           }
@@ -71,7 +67,6 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
                localStorage.removeItem('token');
                localStorage.removeItem('user');
                localStorage.removeItem('sessionId');
-               console.log('✅ LocalStorage cleared');
           }
 
           // Call custom onTimeout if provided
@@ -80,7 +75,6 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
           }
 
           // Redirect to login
-          console.log('🔄 Redirecting to login page...');
           router.push('/');
      }, [dispatch, router, onTimeout]);
 
@@ -123,7 +117,6 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
 
           // Log timer reset
           const timeoutSeconds = Math.floor(timeout / 1000);
-          console.log(`🔄 Timer reset - Next timeout in ${timeoutSeconds} seconds (${Math.floor(timeoutSeconds / 60)}m ${timeoutSeconds % 60}s)`);
 
           // Start countdown logging every 10 seconds
           let elapsedSeconds = 0;
@@ -134,7 +127,6 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
                if (remainingSeconds > 0) {
                     const minutes = Math.floor(remainingSeconds / 60);
                     const seconds = remainingSeconds % 60;
-                    console.log(`⏳ Time until logout: ${minutes}m ${seconds}s`);
                }
           }, 10000); // Log every 10 seconds
 
@@ -150,7 +142,6 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
      useEffect(() => {
           // Only enable timeout if user is authenticated
           if (!isAuthenticated) {
-               console.log('🔓 Inactivity timeout disabled - user not authenticated');
                return;
           }
 
@@ -162,12 +153,10 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
                );
 
                if (shouldExclude) {
-                    console.log('🔓 Inactivity timeout disabled for:', currentPath);
                     return;
                }
           }
 
-          console.log('🔒 Inactivity timeout enabled - timeout:', timeout / 1000, 'seconds');
 
           // List of events that indicate user activity
           // Note: mousemove removed to prevent too many resets
@@ -237,7 +226,6 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
      // Reset logout flag when user logs in
      useEffect(() => {
           if (isAuthenticated && hasLoggedOutRef.current) {
-               console.log('🔓 User logged in - resetting logout flag and restarting timer');
                hasLoggedOutRef.current = false;
                isActiveRef.current = true;
           }
