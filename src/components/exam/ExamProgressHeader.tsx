@@ -52,7 +52,7 @@ export const ExamProgressHeader: React.FC<ExamProgressHeaderProps> = ({
      backupError = null,
      backupCount = 0
 }) => {
-     const { questions, answers, examDuration } = useAppSelector((state) => state.exam);
+     const { questions, answers, examDuration, timeRemaining, currentExam } = useAppSelector((state) => state.exam);
      const { dashboardData } = useAppSelector((state) => state.auth);
      const progress = calculateExamProgress(answers, questions.length);
 
@@ -72,7 +72,8 @@ export const ExamProgressHeader: React.FC<ExamProgressHeaderProps> = ({
 
                          <div className="flex items-center gap-4">
                               <ExamTimer
-                                   initialTime={examDuration}
+                                   initialTime={timeRemaining || examDuration}
+                                   examId={currentExam?.exam_id}
                                    onTimeUp={onTimeUp}
                                    onTimeUpdate={onTimeUpdate}
                                    autoSubmit={true}

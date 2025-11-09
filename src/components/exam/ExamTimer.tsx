@@ -1,26 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Clock } from 'lucide-react';
 
 interface ExamTimerProps {
      initialTime: number;
+     examId?: number; // Add examId for localStorage key
      onTimeUp: () => void;
      onTimeUpdate?: (timeLeft: number) => void;
      autoSubmit?: boolean;
 }
 
-export function ExamTimer({ initialTime, onTimeUp, onTimeUpdate, autoSubmit = true }: ExamTimerProps) {
+export function ExamTimer({ initialTime, examId, onTimeUp, onTimeUpdate, autoSubmit = true }: ExamTimerProps) {
      const [timeLeft, setTimeLeft] = useState(initialTime);
      const [isWarning, setIsWarning] = useState(false);
+     const timerRef = useRef<NodeJS.Timeout | null>(null);
+     const hasCalledTimeUpRef = useRef(false);
 
+     // Initialize timer from Redux state or localStorage
+     useEffect(() => {
+          if (examId) {
+               const examStartKey = `exam_start_time_${examId}`;
+               const examDurationKey = `exam_duration_${examId}`;
+
+               const startTimeStr = localStorage.getItem(examStartKey);
+               const durationStr = localStorage.getItem(examDurationKey);
+
+               if (startTimeStr && durationStr) {
+                    const startTime = parseInt(startTimeStr, 10);
+                    const duration = parseInt(durationStr, 10);
+                    const now = Date.now();
+                    const elapsedSeconds = Math.floor((now - startTime) / 1000);
+                    const remainingTime = Math.max(0, duration - elapsedSeconds);
+
+                    // Only update if different from initialTime (to use server time if available)
+                    if (remainingTime !== initialTime && remainingTime > 0) {
+                         setTimeLeft(remainingTime);
+
+                         // Update Redux state
+                         if (onTimeUpdate) {
+                              queueMicrotask(() => {
+                                   onTimeUpdate(remainingTime);
+                              });
+                         }
+                    } else {
+                         setTimeLeft(initialTime);
+                    }
+               } else {
+                    setTimeLeft(initialTime);
+               }
+          } else {
+               setTimeLeft(initialTime);
+          }
+     }, [examId, initialTime, onTimeUpdate]);
+
+     // Timer countdown
      useEffect(() => {
           if (timeLeft <= 0) {
-               onTimeUp();
-               if (autoSubmit) {
-                    // Auto submit when time is up
-                    console.log('Time is up! Auto submitting exam...');
+               // Prevent multiple calls
+               if (!hasCalledTimeUpRef.current) {
+                    hasCalledTimeUpRef.current = true;
+                    onTimeUp();
+
+                    if (autoSubmit) {
+                         console.log('⏰ Time is up! Auto submitting exam...');
+                    }
+
+                    // Clean up localStorage
+                    if (examId) {
+                         localStorage.removeItem(`exam_start_time_${examId}`);
+                         localStorage.removeItem(`exam_duration_${examId}`);
+                    }
                }
                return;
           }
@@ -30,21 +81,33 @@ export function ExamTimer({ initialTime, onTimeUp, onTimeUpdate, autoSubmit = tr
                setIsWarning(true);
           }
 
-          const timer = setInterval(() => {
+          // Clear any existing timer
+          if (timerRef.current) {
+               clearInterval(timerRef.current);
+          }
+
+          timerRef.current = setInterval(() => {
                setTimeLeft(prev => {
-                    const newTime = prev - 1;
+                    const newTime = Math.max(0, prev - 1);
+
                     // Call onTimeUpdate in next tick to avoid setState during render
-                    if (onTimeUpdate) {
+                    if (onTimeUpdate && newTime >= 0) {
                          queueMicrotask(() => {
                               onTimeUpdate(newTime);
                          });
                     }
+
                     return newTime;
                });
           }, 1000);
 
-          return () => clearInterval(timer);
-     }, [timeLeft, onTimeUp, onTimeUpdate, autoSubmit, isWarning]);
+          return () => {
+               if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                    timerRef.current = null;
+               }
+          };
+     }, [timeLeft, onTimeUp, onTimeUpdate, autoSubmit, isWarning, examId]);
 
      const formatTime = (seconds: number) => {
           const hours = Math.floor(seconds / 3600);

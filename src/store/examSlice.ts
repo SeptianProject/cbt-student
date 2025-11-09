@@ -276,7 +276,33 @@ const examSlice = createSlice({
                          }
 
                          state.examDuration = (action.payload.exam.duration || 120) * 60;
-                         state.timeRemaining = state.examDuration; // Initialize timeRemaining
+
+                         // Calculate time remaining from session status
+                         const sessionStatusData = action.payload.sessionStatus as {
+                              data?: { time_remaining?: number; started_at?: string }
+                         } | undefined;
+
+                         if (sessionStatusData?.data?.time_remaining !== undefined) {
+                              // Use server's time_remaining (in seconds)
+                              state.timeRemaining = sessionStatusData.data.time_remaining;
+
+                              // Store start time in localStorage for persistence across refresh
+                              if (typeof window !== 'undefined' && action.payload.exam.exam_id) {
+                                   const now = Date.now();
+                                   const examStartKey = `exam_start_time_${action.payload.exam.exam_id}`;
+                                   const examDurationKey = `exam_duration_${action.payload.exam.exam_id}`;
+
+                                   // Only set if not already exists (preserve original start time)
+                                   if (!localStorage.getItem(examStartKey)) {
+                                        localStorage.setItem(examStartKey, now.toString());
+                                   }
+                                   localStorage.setItem(examDurationKey, state.examDuration.toString());
+                              }
+                         } else {
+                              // Fallback: Initialize from exam duration if no session status
+                              state.timeRemaining = state.examDuration;
+                         }
+
                          state.isLoading = false;
                     }
                )

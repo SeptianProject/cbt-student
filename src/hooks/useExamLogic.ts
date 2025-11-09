@@ -10,6 +10,7 @@ import { useAutoSaveAnswer } from './useAutoSaveAnswer';
 import { useRestoreAnswers } from './useRestoreAnswers';
 import { usePeriodicBackup } from './usePeriodicBackup';
 import { useEnsureSessionId } from './useEnsureSessionId';
+import { useTimerPersistence } from './useTimerPersistence';
 import { useQueryClient } from '@tanstack/react-query';
 
 export const useExamLogic = () => {
@@ -41,11 +42,30 @@ export const useExamLogic = () => {
      // Ensure session ID is always available
      useEnsureSessionId();
 
+     // Timer persistence - calculate remaining time from localStorage
+     const { calculateRemainingTime, clearTimer } = useTimerPersistence({
+          examId: currentExam?.exam_id,
+          duration: examDuration,
+          enabled: sessionStatus === 'progress' && !isExamEnded
+     });
+
      // Restore answers from temporary table after refresh/reconnect
      const { isRestoring, hasRestored, restoreError, restoreStats } = useRestoreAnswers({
           sessionId,
           enabled: sessionStatus === 'progress' && !isExamEnded
      });
+
+     // Sync timer from localStorage after restore
+     useEffect(() => {
+          if (hasRestored && currentExam?.exam_id && sessionStatus === 'progress') {
+               const persistedTime = calculateRemainingTime();
+
+               // Update Redux state with persisted time if different
+               if (persistedTime !== timeRemaining && persistedTime > 0) {
+                    dispatch(setTimeRemaining(persistedTime));
+               }
+          }
+     }, [hasRestored, currentExam?.exam_id, sessionStatus, calculateRemainingTime, timeRemaining, dispatch]);
 
      // Auto-save answers with status tracking (individual answer save)
      const { isSaving, lastSavedTime, saveError } = useAutoSaveAnswer({
@@ -87,6 +107,9 @@ export const useExamLogic = () => {
      // Navigate to dashboard when exam ends (skip complete page)
      useEffect(() => {
           if (isExamEnded && !isSubmitting) {
+               // Clear timer persistence
+               clearTimer();
+
                // Invalidate currentUser query to fetch fresh data (updated assigned exams)
                queryClient.invalidateQueries({ queryKey: ['currentUser'] });
 
@@ -104,7 +127,7 @@ export const useExamLogic = () => {
                     router.push('/dashboard');
                }, 500);
           }
-     }, [isExamEnded, isSubmitting, router, queryClient]);
+     }, [isExamEnded, isSubmitting, router, queryClient, clearTimer]);
 
      // Check if submit is allowed (15 minutes before exam ends)
      // Update based on timeRemaining from Redux instead of examDuration
