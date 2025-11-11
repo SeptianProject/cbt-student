@@ -63,10 +63,6 @@ export function ExamTimer({ initialTime, examId, onTimeUp, onTimeUpdate, autoSub
                     hasCalledTimeUpRef.current = true;
                     onTimeUp();
 
-                    if (autoSubmit) {
-                         console.log('⏰ Time is up! Auto submitting exam...');
-                    }
-
                     // Clean up localStorage
                     if (examId) {
                          localStorage.removeItem(`exam_start_time_${examId}`);

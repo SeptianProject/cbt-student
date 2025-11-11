@@ -37,12 +37,6 @@ export default function QuestionCard({
           // 🔥 Prioritaskan Redux answer (dari restore) daripada currentAnswer (dari props)
           const answerSource = reduxAnswer || currentAnswer;
 
-          console.log(`📝 QuestionCard ${question.id} update:`, {
-               reduxAnswer,
-               currentAnswer,
-               using: answerSource ? 'found' : 'none'
-          });
-
           // Reset state ketika question berubah
           setSelectedAnswers([]);
           setEssayAnswer('');
@@ -52,14 +46,11 @@ export default function QuestionCard({
           if (answerSource) {
                if (Array.isArray(answerSource.answer)) {
                     setSelectedAnswers(answerSource.answer);
-                    console.log(`✅ Restored multiple choice answers for Q${question.id}:`, answerSource.answer);
                } else {
                     if (question.question_type_id === '3') { // Essay type
                          setEssayAnswer(answerSource.answer as string);
-                         console.log(`✅ Restored essay answer for Q${question.id}`);
                     } else {
                          setSelectedAnswers([answerSource.answer as string]);
-                         console.log(`✅ Restored single choice answer for Q${question.id}:`, answerSource.answer);
                     }
                }
                setIsFlagged(answerSource.is_flagged || false);

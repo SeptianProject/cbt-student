@@ -57,62 +57,30 @@ export default function ExamCompletePage() {
      const nextExam = React.useMemo(() => {
           if (!isClient || !completedExam || !allExams.length) return null;
 
-          console.log('=== FINDING NEXT EXAM ===');
-          console.log('Current completed exam:', {
-               id: completedExam.exam_id,
-               title: completedExam.title,
-               slug: currentSlug
-          });
-          console.log('All available exams:', allExams.map(e => ({
-               id: e.exam_id,
-               title: e.title,
-               order: allExams.indexOf(e)
-          })));
-
           const next = findNextExam(allExams, completedExam.exam_id);
-          console.log('Next exam result:', next ? {
-               id: next.exam_id,
-               title: next.title,
-               duration: next.duration
-          } : 'No next exam found');
-          console.log('=== END FINDING NEXT EXAM ===');
 
           return next;
-     }, [isClient, completedExam, allExams, findNextExam, currentSlug]);
+     }, [isClient, completedExam, allExams, findNextExam]);
 
      const allCompleted = React.useMemo(() => {
           if (!isClient) return false;
           const completed = areAllExamsCompleted(allExams);
-          console.log('All exams completed?', completed);
           return completed;
      }, [isClient, allExams, areAllExamsCompleted]);
 
      const progress = React.useMemo(() => {
           if (!isClient) return { total: 0, completed: 0, inProgress: 0, notStarted: 0 };
           const prog = getExamProgress(allExams);
-          console.log('Exam progress:', prog);
           return prog;
      }, [isClient, allExams, getExamProgress]);
 
      const handleAutoNavigation = useCallback(() => {
-          console.log('=== AUTO NAVIGATION TRIGGERED ===');
-          console.log('Navigation state check:', {
-               hasNavigated: hasNavigatedRef.current,
-               isClient,
-               isTransitioning,
-               nextExam: nextExam ? { id: nextExam.exam_id, title: nextExam.title } : null,
-               allCompleted
-          });
-
           if (hasNavigatedRef.current || !isClient) {
-               console.log('Navigation blocked - already navigated or not client-side');
                return;
           }
 
           // Prevent multiple navigation attempts
           hasNavigatedRef.current = true;
-
-          console.log('Exam statuses before navigation:', localStorage.getItem('exam_statuses'));
 
           // Clear any existing timer
           if (timerRef.current) {
@@ -127,13 +95,6 @@ export default function ExamCompletePage() {
           setTimeout(async () => {
                if (nextExam && !allCompleted) {
                     const nextExamSlug = createExamSlug(nextExam.title);
-                    console.log('🚀 NAVIGATING TO NEXT EXAM:', {
-                         from: currentSlug,
-                         to: nextExamSlug,
-                         examId: nextExam.exam_id,
-                         examTitle: nextExam.title,
-                         examSlug: nextExamSlug
-                    });
 
                     // Reset Redux state completely
                     dispatch(resetExamState());
@@ -153,36 +114,19 @@ export default function ExamCompletePage() {
                     localStorage.setItem('exam_duration', nextExam.duration.toString());
                     localStorage.setItem('current_exam_slug', nextExamSlug);
 
-                    console.log('New localStorage state:', {
-                         exam_id: localStorage.getItem('exam_id'),
-                         exam_duration: localStorage.getItem('exam_duration'),
-                         current_exam_slug: localStorage.getItem('current_exam_slug')
-                    });
-
                     // Navigate to next exam
                     router.push(`/exam/${nextExamSlug}`);
                } else {
-                    console.log('🏁 ALL EXAMS COMPLETED - clearing all sessions and navigating to dashboard');
-
                     // Clear all exam sessions when all exams are completed
                     await examService.clearAllExamSessions();
 
-                    console.log('✅ All sessions cleared - redirecting to dashboard');
                     router.push('/dashboard');
                }
           }, 200);
-     }, [nextExam, router, currentSlug, dispatch, queryClient, isClient, allCompleted, isTransitioning]);
+     }, [nextExam, router, dispatch, queryClient, isClient, allCompleted]);
 
      useEffect(() => {
           if (!isClient) return;
-
-          console.log('=== COMPLETE PAGE EFFECT STARTING ===');
-          console.log('Current state:', {
-               isClient,
-               currentSlug,
-               completedExam: completedExam ? { id: completedExam.exam_id, title: completedExam.title } : null,
-               hasNavigated: hasNavigatedRef.current
-          });
 
           // Load exam result from localStorage
           const storedResult = localStorage.getItem('exam_result');
@@ -190,7 +134,6 @@ export default function ExamCompletePage() {
                try {
                     const result = JSON.parse(storedResult);
                     setExamResult(result);
-                    console.log('Loaded exam result:', result.exam_title);
                } catch (error) {
                     console.error('Failed to parse exam result:', error);
                }
@@ -198,10 +141,6 @@ export default function ExamCompletePage() {
 
           // Ensure current exam is marked as completed
           if (completedExam) {
-               console.log('Marking exam as completed:', {
-                    examId: completedExam.exam_id,
-                    examTitle: completedExam.title
-               });
                updateExamStatus(completedExam.exam_id, 'completed');
           }
 
@@ -211,19 +150,15 @@ export default function ExamCompletePage() {
 
           // Set up auto navigation timer - only start if not already navigated
           if (!hasNavigatedRef.current) {
-               console.log('Setting up auto navigation timer - countdown from 5 seconds');
                timerRef.current = setInterval(() => {
                     setCountdown(prev => {
-                         console.log('Countdown:', prev);
                          if (prev <= 1) {
-                              console.log('Countdown finished - triggering navigation');
                               if (timerRef.current) {
                                    clearInterval(timerRef.current);
                                    timerRef.current = null;
                               }
                               // Use setTimeout to avoid setState during render
                               setTimeout(() => {
-                                   console.log('Executing auto navigation');
                                    handleAutoNavigation();
                               }, 100);
                               return 0;
@@ -231,12 +166,9 @@ export default function ExamCompletePage() {
                          return prev - 1;
                     });
                }, 1000);
-          } else {
-               console.log('Navigation already triggered - skipping timer setup');
           }
 
           return () => {
-               console.log('Complete page effect cleanup');
                if (timerRef.current) {
                     clearInterval(timerRef.current);
                     timerRef.current = null;
@@ -246,9 +178,7 @@ export default function ExamCompletePage() {
      }, [handleAutoNavigation, isClient, completedExam, updateExamStatus, currentSlug]);
 
      const handleManualNavigation = () => {
-          console.log('=== MANUAL NAVIGATION TRIGGERED ===');
           if (hasNavigatedRef.current || !isClient) {
-               console.log('Manual navigation blocked');
                return;
           }
 
@@ -261,7 +191,6 @@ export default function ExamCompletePage() {
                timerRef.current = null;
           }
 
-          console.log('🚀 MANUAL NAVIGATION - same logic as auto navigation');
           handleAutoNavigation();
      };
 

@@ -197,24 +197,8 @@ const parseAnswerKey = (answerKey: unknown): string[] => {
 
 export const parseQuestion = (question: Question): ParsedQuestion => {
      try {
-          console.log('Parsing question:', {
-               id: question.id,
-               choices: question.choices,
-               answer_key: question.answer_key,
-               answer_key_type: typeof question.answer_key,
-               points: question.points,
-               question_image: question.question_image,
-               choices_images: question.choices_images
-          });
-
           const choices = parseChoices(question.choices);
           const answer_key = parseAnswerKey(question.answer_key);
-
-          console.log('✅ Parsed answer_key:', {
-               original: question.answer_key,
-               parsed: answer_key,
-               choiceKeys: Object.keys(choices)
-          });
 
           // Handle points parsing
           let points = 0;
@@ -229,11 +213,6 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
           // ✅ Parse choices_images using the new helper function
           const choices_images = parseChoicesImages(question.choices_images);
 
-          console.log('✅ Parsed choices_images:', {
-               original: question.choices_images,
-               parsed: choices_images
-          });
-
           const result: ParsedQuestion = {
                ...question,
                choices,
@@ -242,15 +221,6 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
                question_image: question.question_image || null,
                choices_images
           };
-
-          console.log('Parsed question result:', {
-               id: result.id,
-               choices: result.choices,
-               answer_key: result.answer_key,
-               points: result.points,
-               has_question_image: !!result.question_image,
-               has_choices_images: !!result.choices_images
-          });
 
           return result;
      } catch (error) {
@@ -268,9 +238,6 @@ export const parseQuestion = (question: Question): ParsedQuestion => {
 };
 
 export const parseExamQuestions = (questions: Question[]): ParsedQuestion[] => {
-     console.log('Parsing exam questions - Total count:', questions?.length || 0);
-     console.log('Raw questions from API:', questions);
-
      // Validate questions data
      if (!Array.isArray(questions)) {
           console.error('Invalid questions data - not an array:', questions);
@@ -282,18 +249,7 @@ export const parseExamQuestions = (questions: Question[]): ParsedQuestion[] => {
           return [];
      }
 
-     // Log first question for debugging
-     console.log('Sample question data:', {
-          id: questions[0].id,
-          exam_id: questions[0].exam_id,
-          choices: questions[0].choices,
-          answer_key: questions[0].answer_key,
-          points: questions[0].points,
-          question_type_id: questions[0].question_type_id
-     });
-
      const parsedQuestions = questions.map(parseQuestion);
-     console.log('Parsed questions count:', parsedQuestions.length);
 
      return parsedQuestions;
 };
