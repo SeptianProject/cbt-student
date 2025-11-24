@@ -156,10 +156,10 @@ export default function ExamDetailPage() {
                     ) : (
                          <div className="flex justify-center">
                               <Button
-                                   className="px-8 py-3 text-lg bg-blue-600 hover:bg-blue-700"
+                                   className={`px-8 py-3 text-lg ${examMutation.isPending || !currentExam.can_start ? 'cursor-not-allowed bg-slate-500' : 'bg-blue-600 hover:bg-blue-700'}`}
                                    onClick={handleConfirm}
-                                   disabled={examMutation.isPending}>
-                                   Mulai Ujian
+                                   disabled={examMutation.isPending || !currentExam.can_start}>
+                                   {currentExam.can_start ? 'Mulai Ujian' : 'Ujian Belum Tersedia'}
                               </Button>
                          </div>
                     )}

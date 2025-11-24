@@ -47,7 +47,7 @@ export function ExamTimer({ initialTime, examId, onTimeUp, onTimeUpdate, autoSub
                     } else {
                          setTimeLeft(initialTime);
                     }
-               } else {
+               } else { 
                     setTimeLeft(initialTime);
                }
           } else {

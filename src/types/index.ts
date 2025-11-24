@@ -30,6 +30,10 @@ export interface AssignedExam {
      title: string;
      duration: number;
      total_quest: number;
+     start_date: string;
+     end_date: string;
+     status: 'upcoming' | 'available' | 'expired';
+     can_start: boolean;
 }
 
 export interface Student {
