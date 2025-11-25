@@ -96,11 +96,7 @@ export default function ExamStartPage() {
           );
      }
 
-     // ❌ REMOVE ERROR MODAL - Langsung redirect ke dashboard
-     // Jika error dan exam ended, akan di-handle oleh useEffect di atas
-     // Hanya tampilkan error jika BUKAN session invalid (isExamEnded = false)
      if ((isError || (!questions.length && !isLoading)) && !isExamEnded) {
-          // Don't show error screen, just loading while redirecting
           return <LoadingExamScreen />;
      }
 

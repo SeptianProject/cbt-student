@@ -66,7 +66,7 @@ export const ExamProgressHeader: React.FC<ExamProgressHeaderProps> = ({
                                    {dashboardData?.student.name || 'Siswa'} - Kelas {dashboardData?.student.grade_id}
                               </h1>
                               <p className="text-sm text-gray-600">
-                                   Ujian Berlangsung - Progress: {progress.answered}/{questions.length} terjawab
+                                   <span className='font-bold'>{currentExam?.title}</span> - Progress: {progress.answered}/{questions.length} terjawab
                               </p>
                          </div>
 
