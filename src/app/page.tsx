@@ -48,14 +48,14 @@ export default function LoginPage() {
     <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gray-50 p-4">
       <div className="w-full max-w-md">
         <div className="bg-white shadow-md rounded-lg p-8">
-          <h1 className="text-2xl font-bold text-center mb-6 text-[#404040]">Login CBT System</h1>
+          <h1 className="text-2xl font-bold text-center mb-6 text-[#404040]">Login CBT App</h1>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>
               <Input
                 {...register("email")}
-                placeholder="Email"
-                type="email"
+                placeholder="NIS"
+                type="text"
                 className={errors.email ? "border-red-500" : ""}
               />
               {errors.email && (

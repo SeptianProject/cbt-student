@@ -3,8 +3,7 @@ import { z } from 'zod'
 export const loginSchema = z.object({
      email: z
           .string()
-          .min(1, 'Email harus diisi')
-          .email('Format email tidak valid'),
+          .min(1, 'NIS harus diisi'),
      password: z
           .string()
           .min(1, 'Password harus diisi')
