@@ -20,7 +20,9 @@ const ExamPage = () => {
 
      useEffect(() => {
           if (userData?.assigned && userData.assigned.length > 0) {
-               const firstExam = userData.assigned[0];
+               // Sort descending (terbaru dulu) - reverse array untuk mendapat exam terbaru
+               const sortedExams = [...userData.assigned].reverse();
+               const firstExam = sortedExams[0];
                const examSlug = createExamSlug(firstExam.title);
 
                localStorage.setItem('exam_id', firstExam.exam_id.toString());
