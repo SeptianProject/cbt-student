@@ -143,11 +143,11 @@ export const useExamLogic = () => {
           }
      }, [isExamEnded, isSubmitting, router, queryClient, clearTimer]);
 
-     // Check if submit is allowed (15 minutes before exam ends)
+     // Check if submit is allowed (45 minutes before exam ends)
      // Update based on timeRemaining from Redux instead of examDuration
      useEffect(() => {
-          const fifteenMinutesInSeconds = 15 * 60; // 15 menit = 900 detik
-          setIsSubmitAllowed(timeRemaining <= fifteenMinutesInSeconds);
+          const fortyFiveMinutesInSeconds = 45 * 60; // 45 menit = 2700 detik
+          setIsSubmitAllowed(timeRemaining <= fortyFiveMinutesInSeconds);
      }, [timeRemaining]);
 
      // Prevent page unload during exam
@@ -193,9 +193,9 @@ export const useExamLogic = () => {
 
      // Submit handlers
      const handleSubmitExam = useCallback(() => {
-          // Check if submit is allowed (15 minutes before exam ends)
+          // Check if submit is allowed (45 minutes before exam ends)
           if (!isSubmitAllowed) {
-               return; // Don't allow submit if not in the 15-minute window
+               return; // Don't allow submit if not in the 45-minute window
           }
 
           const validation = validateAnswers(answers, questions);
