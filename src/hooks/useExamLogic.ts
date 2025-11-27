@@ -13,6 +13,20 @@ import { useEnsureSessionId } from './useEnsureSessionId';
 import { useTimerPersistence } from './useTimerPersistence';
 import { useQueryClient } from '@tanstack/react-query';
 
+/**
+ * Helper function untuk smooth scroll ke atas halaman
+ * Menggunakan requestAnimationFrame untuk performa optimal
+ */
+const scrollToTop = () => {
+     // Gunakan requestAnimationFrame untuk performa yang lebih baik
+     requestAnimationFrame(() => {
+          window.scrollTo({
+               top: 0,
+               behavior: 'smooth'
+          });
+     });
+};
+
 export const useExamLogic = () => {
      const router = useRouter();
      const params = useParams();
@@ -160,17 +174,20 @@ export const useExamLogic = () => {
      // Navigation handlers
      const goToQuestion = useCallback((questionNumber: number) => {
           setCurrentQuestionIndex(questionNumber - 1);
+          scrollToTop(); // Auto-scroll ke atas untuk fokus membaca soal
      }, []);
 
      const goToPrevious = useCallback(() => {
           if (currentQuestionIndex > 0) {
                setCurrentQuestionIndex((prev) => prev - 1);
+               scrollToTop(); // Auto-scroll ke atas untuk fokus membaca soal
           }
      }, [currentQuestionIndex]);
 
      const goToNext = useCallback(() => {
           if (currentQuestionIndex < questions.length - 1) {
                setCurrentQuestionIndex((prev) => prev + 1);
+               scrollToTop(); // Auto-scroll ke atas untuk fokus membaca soal
           }
      }, [currentQuestionIndex, questions.length]);
 
