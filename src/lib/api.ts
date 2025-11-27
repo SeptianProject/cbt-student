@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
      baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-     timeout: 10000,
+     timeout: 30000, // Increase to 30 seconds untuk login/submit requests
 });
 
 api.interceptors.request.use(

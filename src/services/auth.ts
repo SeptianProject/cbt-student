@@ -1,16 +1,31 @@
 import api from '@/lib/api';
 import { DashboardExam, User } from '@/types';
+import axios from 'axios';
 
 export const authService = {
      login: async (email: string, password: string): Promise<{ user: User; token: string }> => {
-          const response = await api.post<{ user: User; token: string }>('/login', {
-               email,
-               password
-          });
-          if (typeof window !== 'undefined' && response.data.token) {
-               localStorage.setItem('api_token', response.data.token);
+          try {
+               const response = await api.post<{ user: User; token: string }>('/login', {
+                    email,
+                    password
+               });
+               if (typeof window !== 'undefined' && response.data.token) {
+                    localStorage.setItem('api_token', response.data.token);
+               }
+               return response.data;
+          } catch (error) {
+               // Enhanced error logging untuk debugging
+               console.error('Login failed:', error);
+               if (axios.isAxiosError(error)) {
+                    if (error.code === 'ECONNABORTED') {
+                         throw new Error('Request timeout - Server tidak merespons. Cek koneksi internet atau coba lagi.');
+                    }
+                    if (!error.response) {
+                         throw new Error('Network error - Tidak dapat terhubung ke server. Cek CORS atau API URL.');
+                    }
+               }
+               throw error;
           }
-          return response.data;
      },
 
      logout: async (): Promise<void> => {
