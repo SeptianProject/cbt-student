@@ -42,10 +42,10 @@ export const ExamNavigationFooter: React.FC<ExamNavigationFooterProps> = ({
                                    onClick={onSubmit}
                                    disabled={!isSubmitAllowed}
                                    className={`flex items-center gap-2 ${isSubmitAllowed
-                                             ? 'bg-red-500 hover:bg-red-600'
-                                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        ? 'bg-red-500 hover:bg-red-600'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         }`}>
-                                   {isSubmitAllowed ? 'Selesai Ujian' : 'Submit (15 menit sebelum selesai)'}
+                                   {isSubmitAllowed ? 'Selesai Ujian' : 'Jawab Semua Soal untuk Submit'}
                               </Button>
                          ) : (
                               <Button

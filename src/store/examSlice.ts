@@ -189,7 +189,7 @@ const examSlice = createSlice({
                     state.isError = true;
 
                     const error = action.payload as { type?: string; status?: number; message?: string } | undefined;
-                    state.errorMessage = error?.message || 'Failed to load exam';
+                    state.errorMessage = error?.message || 'Gagal memuat soal ujian. Silakan coba lagi.';
 
                     // Log error untuk debugging
                     console.error('❌ Fetch exam rejected:', {
@@ -377,7 +377,7 @@ const examSlice = createSlice({
                .addCase(submitExam.rejected, (state: Draft<ExamState>, action: { error: { message?: string } }) => {
                     state.isSubmitting = false;
                     state.isError = true;
-                    state.errorMessage = action.error?.message || 'Failed to submit exam';
+                    state.errorMessage = action.error?.message || 'Gagal mengirim jawaban ujian. Silakan coba lagi.';
                     // Don't set isExamEnded to true on error - keep user in exam
                })
                .addCase(checkSessionStatus.fulfilled, (state: Draft<ExamState>, action: PayloadAction<{ success: boolean; session_id?: number; status?: string;[key: string]: unknown }>) => {

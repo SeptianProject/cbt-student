@@ -81,13 +81,15 @@ export interface RandomizedQuestionResult {
  * 
  * Strategi Randomization:
  * 1. Pisahkan soal menjadi 2 grup: Non-Essay dan Essay
- * 2. Shuffle masing-masing grup dengan seed yang berbeda (tapi tetap deterministik)
- * 3. Gabungkan hasil: Non-Essay questions dulu, Essay questions di akhir
- * 4. Pertahankan mapping index untuk session recovery
+ * 2. Shuffle hanya soal Non-Essay dengan seed deterministik
+ * 3. Soal Essay TIDAK di-shuffle, gunakan urutan original dari API
+ * 4. Gabungkan hasil: Non-Essay questions (shuffled) dulu, Essay questions (original order) di akhir
+ * 5. Pertahankan mapping index untuk session recovery
  * 
  * Benefits:
  * - UX lebih baik: Siswa bisa fokus soal objektif dulu, essay belakangan
  * - Time management: Alokasi waktu lebih mudah
+ * - Essay tetap berurutan sesuai data API (tidak diacak)
  * - Tetap fair: Randomization tetap konsisten per user+exam
  * 
  * @param questions - Array soal original
@@ -116,16 +118,13 @@ export const randomizeQuestions = (
      // Group questions by type (non-essay vs essay)
      const { nonEssayQuestions, essayQuestions } = groupQuestionsByType(questions);
 
-     // Shuffle each group with different seed offsets for variety
-     // tapi tetap deterministik karena seed base-nya sama
+     // Shuffle only non-essay questions
      const rngNonEssay = new SeededRandom(seed);
-     const rngEssay = new SeededRandom(seed + 999999); // Offset besar untuk avoid collision
-
      const shuffledNonEssay = seededShuffle(nonEssayQuestions, rngNonEssay);
-     const shuffledEssay = seededShuffle(essayQuestions, rngEssay);
 
-     // Gabungkan: non-essay dulu, essay belakangan
-     const shuffledQuestions = [...shuffledNonEssay, ...shuffledEssay];
+     // Essay questions tidak di-shuffle, gunakan urutan original dari API
+     // Gabungkan: non-essay yang sudah di-shuffle dulu, essay dengan urutan original di akhir
+     const shuffledQuestions = [...shuffledNonEssay, ...essayQuestions];
 
      // Buat mapping antara original dan randomized index
      const originalToRandomizedMap: Record<number, number> = {};

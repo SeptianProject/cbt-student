@@ -97,7 +97,7 @@ export const useRestoreAnswers = ({ sessionId, enabled = true }: UseRestoreAnswe
                     setHasRestored(true);
                } catch (error) {
                     console.error('❌ Failed to restore answers:', error);
-                    const errorMessage = error instanceof Error ? error.message : 'Gagal restore jawaban';
+                    const errorMessage = error instanceof Error ? error.message : 'Gagal memuat jawaban sebelumnya';
                     setRestoreError(errorMessage);
                     // Don't block exam - allow user to continue
                     setHasRestored(true);

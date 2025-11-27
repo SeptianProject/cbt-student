@@ -64,8 +64,7 @@ export default function ExamDetailPage() {
                     axiosError?.response?.data?.message?.includes('sesi ujian yang aktif')) {
                     setShowSessionError(true);
                } else {
-                    const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian. Silakan coba lagi.';
-                    alert(errorMessage);
+                    alert('Tidak dapat memulai ujian. Pastikan koneksi internet Anda stabil, lalu coba lagi.');
                }
           }
      })
@@ -82,7 +81,7 @@ export default function ExamDetailPage() {
 
      const handleStartExam = () => {
           if (!currentExam) {
-               alert('Ujian tidak ditemukan. Silakan kembali ke halaman ujian.');
+               alert('Ujian tidak ditemukan atau belum tersedia. Silakan kembali ke daftar ujian.');
                return;
           }
           examMutation.mutate();

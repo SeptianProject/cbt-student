@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchExam, setAnswers, setFlag, setShowSubmitModal, submitExam, resetExamState, setTimeRemaining } from '@/store/examSlice';
 import { getCurrentUser } from '@/store/authSlice';
-import { validateAnswers } from '@/lib/examUtils';
+import { validateAnswers, areAllQuestionsAnswered } from '@/lib/examUtils';
 import { useAutoSaveAnswer } from './useAutoSaveAnswer';
 import { useRestoreAnswers } from './useRestoreAnswers';
 import { usePeriodicBackup } from './usePeriodicBackup';
@@ -143,12 +143,12 @@ export const useExamLogic = () => {
           }
      }, [isExamEnded, isSubmitting, router, queryClient, clearTimer]);
 
-     // Check if submit is allowed (45 minutes before exam ends)
-     // Update based on timeRemaining from Redux instead of examDuration
+     // Check if submit is allowed (all questions answered)
+     // Submit button akan aktif jika semua soal sudah dijawab
      useEffect(() => {
-          const fortyFiveMinutesInSeconds = 45 * 60; // 45 menit = 2700 detik
-          setIsSubmitAllowed(timeRemaining <= fortyFiveMinutesInSeconds);
-     }, [timeRemaining]);
+          const allAnswered = areAllQuestionsAnswered(answers, questions);
+          setIsSubmitAllowed(allAnswered);
+     }, [answers, questions]);
 
      // Prevent page unload during exam
      useEffect(() => {
@@ -193,9 +193,9 @@ export const useExamLogic = () => {
 
      // Submit handlers
      const handleSubmitExam = useCallback(() => {
-          // Check if submit is allowed (45 minutes before exam ends)
+          // Check if submit is allowed (all questions must be answered)
           if (!isSubmitAllowed) {
-               return; // Don't allow submit if not in the 45-minute window
+               return; // Don't allow submit if not all questions are answered
           }
 
           const validation = validateAnswers(answers, questions);

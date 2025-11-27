@@ -286,6 +286,35 @@ export const calculateExamProgress = (answers: Record<number, StudentAnswer>, to
      };
 };
 
+/**
+ * Check if all questions have been answered
+ * Helper function untuk menentukan apakah tombol submit sudah bisa diaktifkan
+ * 
+ * @param answers - Record of student answers
+ * @param questions - Array of all exam questions
+ * @returns true if all questions are answered, false otherwise
+ */
+export const areAllQuestionsAnswered = (
+     answers: Record<number, StudentAnswer>,
+     questions: ParsedQuestion[]
+): boolean => {
+     // Cek apakah semua question ID ada di answers dan memiliki jawaban valid
+     return questions.every(question => {
+          const answer = answers[question.id];
+
+          if (!answer) return false;
+
+          // Cek berdasarkan tipe jawaban
+          if (Array.isArray(answer.answer)) {
+               // Untuk pilihan ganda kompleks, minimal ada 1 pilihan
+               return answer.answer.length > 0;
+          }
+
+          // Untuk MC single, True/False, dan Essay
+          return answer.answer && answer.answer.trim() !== '';
+     });
+};
+
 export const validateAnswers = (answers: Record<number, StudentAnswer>, questions: ParsedQuestion[]) => {
      const validation = {
           isValid: true,

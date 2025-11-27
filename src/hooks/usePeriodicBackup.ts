@@ -76,7 +76,7 @@ export const usePeriodicBackup = ({
                          setBackupCount(prev => prev + 1);
                     }
                } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : 'Backup failed';
+                    const errorMessage = error instanceof Error ? error.message : 'Gagal menyimpan cadangan jawaban';
                     console.error('❌ Periodic backup error:', errorMessage);
                     setBackupError(errorMessage);
                } finally {

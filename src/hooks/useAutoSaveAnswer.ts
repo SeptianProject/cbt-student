@@ -66,7 +66,7 @@ export const useAutoSaveAnswer = ({
                setLastSavedTime(new Date());
           } catch (error) {
                console.error('❌ Failed to save answer:', error);
-               const errorMessage = error instanceof Error ? error.message : 'Gagal menyimpan jawaban';
+               const errorMessage = error instanceof Error ? error.message : 'Jawaban tidak tersimpan. Silakan periksa koneksi internet Anda.';
                setSaveError(errorMessage);
 
                // Log detailed error

@@ -25,7 +25,7 @@ export const SessionErrorHandler: React.FC<SessionErrorHandlerProps> = ({
                }
           } catch (error) {
                console.error('Failed to clear session:', error);
-               alert('Gagal membersihkan sesi. Silakan hubungi administrator.');
+               alert('Terjadi kendala saat membersihkan sesi ujian. Silakan muat ulang halaman atau hubungi pengawas ujian.');
           }
      };
 
@@ -41,22 +41,22 @@ export const SessionErrorHandler: React.FC<SessionErrorHandlerProps> = ({
                     </div>
 
                     <h3 className="text-lg font-semibold text-red-800 mb-2">
-                         Sesi Ujian Aktif Terdeteksi
+                         Masih Ada Ujian yang Sedang Berjalan
                     </h3>
 
                     <p className="text-red-600 text-sm mb-6">
-                         Anda masih memiliki sesi ujian yang aktif untuk ujian ini.
-                         Hal ini mungkin terjadi karena:
+                         Anda masih memiliki ujian yang belum selesai untuk ujian ini.
+                         Hal ini bisa terjadi karena:
                     </p>
 
                     <ul className="text-left text-sm text-red-600 mb-6 space-y-1">
-                         <li>• Browser tertutup saat mengerjakan ujian</li>
-                         <li>• Koneksi internet terputus sebelumnya</li>
-                         <li>• Sesi ujian tidak berakhir dengan normal</li>
+                         <li>• Browser ditutup saat ujian sedang berlangsung</li>
+                         <li>• Koneksi internet terputus tiba-tiba</li>
+                         <li>• Ujian belum diakhiri dengan benar</li>
                     </ul>
 
                     <p className="text-red-600 text-sm mb-6 font-medium">
-                         Silakan bersihkan sesi yang lama untuk memulai ujian yang baru.
+                         Silakan bersihkan sesi ujian sebelumnya untuk memulai ujian baru.
                     </p>
 
                     <div className="flex space-x-3 justify-center">
