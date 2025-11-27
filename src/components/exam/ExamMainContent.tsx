@@ -40,7 +40,7 @@ export const ExamMainContent: React.FC<ExamMainContentProps> = ({
                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div className="lg:col-span-3">
                          <QuestionCard
-                              key={`question-${currentQuestion.id}-${currentQuestionIndex}`} // Key unik untuk force re-render
+                              key={`question-${currentQuestion.id}-${currentQuestionIndex}`}
                               question={currentQuestion}
                               questionNumber={currentQuestionIndex + 1}
                               totalQuestions={questions.length}

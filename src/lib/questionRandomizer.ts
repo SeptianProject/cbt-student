@@ -29,8 +29,13 @@ class SeededRandom {
      }
 }
 
-// Fisher-Yates shuffle dengan seeded random
-const shuffleArray = <T>(array: T[], rng: SeededRandom): T[] => {
+/**
+ * Fisher-Yates shuffle algorithm dengan seeded random untuk konsistensi
+ * @param array - Array yang akan di-shuffle
+ * @param rng - Seeded random number generator
+ * @returns Array yang sudah di-shuffle dengan seed yang konsisten
+ */
+const seededShuffle = <T>(array: T[], rng: SeededRandom): T[] => {
      const shuffled = [...array];
 
      for (let i = shuffled.length - 1; i > 0; i--) {
@@ -39,6 +44,27 @@ const shuffleArray = <T>(array: T[], rng: SeededRandom): T[] => {
      }
 
      return shuffled;
+};
+
+/**
+ * Helper untuk grouping questions berdasarkan tipe
+ * Soal essay (type "3") dipisahkan untuk diletakkan di akhir
+ */
+const groupQuestionsByType = (questions: ParsedQuestion[]) => {
+     const essayType = "3";
+
+     const nonEssayQuestions: ParsedQuestion[] = [];
+     const essayQuestions: ParsedQuestion[] = [];
+
+     questions.forEach(question => {
+          if (question.question_type_id === essayType) {
+               essayQuestions.push(question);
+          } else {
+               nonEssayQuestions.push(question);
+          }
+     });
+
+     return { nonEssayQuestions, essayQuestions };
 };
 
 // Interface untuk question randomizer result
@@ -51,11 +77,23 @@ export interface RandomizedQuestionResult {
 }
 
 /**
- * Me-randomize soal berdasarkan user dan exam
+ * Me-randomize soal berdasarkan user dan exam dengan strategi grouping by type
+ * 
+ * Strategi Randomization:
+ * 1. Pisahkan soal menjadi 2 grup: Non-Essay dan Essay
+ * 2. Shuffle masing-masing grup dengan seed yang berbeda (tapi tetap deterministik)
+ * 3. Gabungkan hasil: Non-Essay questions dulu, Essay questions di akhir
+ * 4. Pertahankan mapping index untuk session recovery
+ * 
+ * Benefits:
+ * - UX lebih baik: Siswa bisa fokus soal objektif dulu, essay belakangan
+ * - Time management: Alokasi waktu lebih mudah
+ * - Tetap fair: Randomization tetap konsisten per user+exam
+ * 
  * @param questions - Array soal original
  * @param userId - ID pengguna untuk seed
  * @param examId - ID exam untuk seed
- * @returns Hasil randomized questions dengan mapping
+ * @returns Hasil randomized questions dengan mapping dan metadata
  */
 export const randomizeQuestions = (
      questions: ParsedQuestion[],
@@ -75,13 +113,21 @@ export const randomizeQuestions = (
      // Generate seed yang konsisten untuk user dan exam ini
      const seed = generateSeed(userId, examId);
 
-     // Buat seeded random number generator
-     const rng = new SeededRandom(seed);
+     // Group questions by type (non-essay vs essay)
+     const { nonEssayQuestions, essayQuestions } = groupQuestionsByType(questions);
 
-     // Shuffle questions
-     const shuffledQuestions = shuffleArray(questions, rng);
+     // Shuffle each group with different seed offsets for variety
+     // tapi tetap deterministik karena seed base-nya sama
+     const rngNonEssay = new SeededRandom(seed);
+     const rngEssay = new SeededRandom(seed + 999999); // Offset besar untuk avoid collision
 
-     // Buat mapping antara original dan randomized index (using objects instead of Maps)
+     const shuffledNonEssay = seededShuffle(nonEssayQuestions, rngNonEssay);
+     const shuffledEssay = seededShuffle(essayQuestions, rngEssay);
+
+     // Gabungkan: non-essay dulu, essay belakangan
+     const shuffledQuestions = [...shuffledNonEssay, ...shuffledEssay];
+
+     // Buat mapping antara original dan randomized index
      const originalToRandomizedMap: Record<number, number> = {};
      const randomizedToOriginalMap: Record<number, number> = {};
      const questionIdToRandomizedIndexMap: Record<number, number> = {};
@@ -93,8 +139,6 @@ export const randomizeQuestions = (
           randomizedToOriginalMap[randomizedIndex] = originalIndex;
           questionIdToRandomizedIndexMap[question.id] = randomizedIndex;
      });
-
-
 
      return {
           questions: shuffledQuestions,
