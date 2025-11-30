@@ -20,8 +20,12 @@ const ExamPage = () => {
 
      useEffect(() => {
           if (userData?.assigned && userData.assigned.length > 0) {
-               // Sort descending (terbaru dulu) - reverse array untuk mendapat exam terbaru
-               const sortedExams = [...userData.assigned].reverse();
+               // Sort by start_date ascending (ujian yang paling dulu dimulai akan dikerjakan terlebih dahulu)
+               const sortedExams = [...userData.assigned].sort((a, b) => {
+                    const dateA = new Date(a.start_date).getTime();
+                    const dateB = new Date(b.start_date).getTime();
+                    return dateA - dateB; // Ascending: ujian dengan start_date paling awal di depan
+               });
                const firstExam = sortedExams[0];
                const examSlug = createExamSlug(firstExam.title);
 

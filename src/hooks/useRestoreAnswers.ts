@@ -8,6 +8,7 @@ import { setAnswers } from '@/store/examSlice';
 interface UseRestoreAnswersOptions {
      sessionId: number | null;
      enabled?: boolean;
+     sessionStatus?: 'progress' | 'submited'; // Only restore if progress
 }
 
 interface RestoreStats {
@@ -32,8 +33,11 @@ interface RestoreStats {
  * - Panggil GET /api/siswa/exam-session/{sessionId}/answers
  * - Parse response dan restore ke Redux store
  * - Component QuestionCard akan automatically update karena subscribe ke Redux
+ * 
+ * CRITICAL: Only restore if session status is 'progress'
+ * If session is 'submited', skip restore
  */
-export const useRestoreAnswers = ({ sessionId, enabled = true }: UseRestoreAnswersOptions) => {
+export const useRestoreAnswers = ({ sessionId, enabled = true, sessionStatus = 'progress' }: UseRestoreAnswersOptions) => {
      const dispatch = useAppDispatch();
      const [isRestoring, setIsRestoring] = useState(false);
      const [hasRestored, setHasRestored] = useState(false);
@@ -44,6 +48,13 @@ export const useRestoreAnswers = ({ sessionId, enabled = true }: UseRestoreAnswe
           const restoreAnswers = async () => {
                // Skip if disabled, already restored, or no session ID
                if (!enabled || hasRestored || !sessionId) {
+                    return;
+               }
+
+               // ✅ NEW: Only restore if session status is 'progress'
+               if (sessionStatus !== 'progress') {
+                    console.warn('⚠️ Skipping restore - session status is not progress:', sessionStatus);
+                    setHasRestored(true); // Mark as restored to prevent retry
                     return;
                }
 
@@ -107,7 +118,9 @@ export const useRestoreAnswers = ({ sessionId, enabled = true }: UseRestoreAnswe
           };
 
           restoreAnswers();
-     }, [sessionId, enabled, hasRestored, dispatch]); return {
+     }, [sessionId, enabled, hasRestored, sessionStatus, dispatch]);
+
+     return {
           isRestoring,
           hasRestored,
           restoreError,

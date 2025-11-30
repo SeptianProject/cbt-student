@@ -89,7 +89,7 @@ export interface ExamSession {
      start_time: string;
      end_time?: string;
      remaining_time: number; // in seconds
-     status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+     status: 'progress' | 'submited';
 }
 
 export interface StudentAnswer {
@@ -184,7 +184,7 @@ export interface SessionStatus {
      success: boolean;
      data: {
           session_id: number;
-          status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+          status: 'progress' | 'submited';
           time_remaining: number;
           started_at: string;
           end_time: string;
@@ -212,7 +212,7 @@ export interface RestoreAnswersResponse {
      message: string;
      data: {
           session_id: number;
-          session_status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+          session_status: 'progress' | 'submited';
           restored_at: string;
           stats: {
                total_answered: number;
@@ -226,7 +226,7 @@ export interface GetSavedAnswersResponse {
      success: boolean;
      data: {
           session_id: number;
-          session_status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+          session_status: 'progress' | 'submited';
           exam_title: string;
           answers: Record<string, string>; // { "1": "A", "2": "B", "3": "C" }
           essay_answers: Record<string, string>; // { "5": "Jawaban essay..." }
@@ -250,7 +250,7 @@ export interface SessionProgressResponse {
      data: {
           session_id: number;
           exam_title: string;
-          status: 'progress' | 'submitted' | 'expired' | 'cancelled';
+          status: 'progress' | 'submited';
           total_questions: number;
           progress_percent: number;
           time_remaining: number;

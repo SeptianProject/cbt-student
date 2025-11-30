@@ -61,8 +61,12 @@ export const useAutoExamSelection = ({
 
           const statuses = getExamStatuses();
 
-          // Sort exams by order (assuming the array order is the intended sequence)
-          const sortedExams = [...exams];
+          // Sort exams by start_date ascending (ujian yang lebih dulu dimulai dikerjakan terlebih dahulu)
+          const sortedExams = [...exams].sort((a, b) => {
+               const dateA = new Date(a.start_date).getTime();
+               const dateB = new Date(b.start_date).getTime();
+               return dateA - dateB;
+          });
 
           // Priority 1: Find exam in progress
           const inProgressStatus = statuses.find(s => s.status === 'in_progress');

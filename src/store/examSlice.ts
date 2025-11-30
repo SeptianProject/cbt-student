@@ -21,7 +21,7 @@ interface ExamState {
      isSubmitting: boolean;
      sessionId: number | null;
      sessionToken: string | null;
-     sessionStatus: 'progress' | 'submitted' | 'expired' | 'cancelled' | null;
+     sessionStatus: 'progress' | 'submited' | null;
      submitResult: {
           session_id?: number;
           exam_title?: string;
@@ -202,7 +202,7 @@ const examSlice = createSlice({
                     // Ini akan trigger auto-redirect ke dashboard di useExamLogic
                     if (error?.type === 'SESSION_INVALID') {
                          state.isExamEnded = true;
-                         state.sessionStatus = 'submitted'; // or 'expired'
+                         state.sessionStatus = 'submited';
                     }
                })
                .addCase(
@@ -316,7 +316,7 @@ const examSlice = createSlice({
                     state.isSubmitting = false;
                     state.isExamEnded = true;
                     state.showSubmitModal = false;
-                    state.sessionStatus = 'submitted';
+                    state.sessionStatus = 'submited';
 
                     // ✅ Clean up timer from localStorage
                     if (typeof window !== 'undefined' && state.currentExam?.exam_id) {

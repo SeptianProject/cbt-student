@@ -57,11 +57,18 @@ export const useExamFlow = () => {
 
           const statuses = getExamStatuses();
 
-          if (completedExamId) {
-               const currentIndex = exams.findIndex(exam => exam.exam_id === completedExamId);
+          // Sort exams by start_date ascending (ujian yang lebih dulu dimulai dikerjakan terlebih dahulu)
+          const sortedExams = [...exams].sort((a, b) => {
+               const dateA = new Date(a.start_date).getTime();
+               const dateB = new Date(b.start_date).getTime();
+               return dateA - dateB;
+          });
 
-               if (currentIndex >= 0 && currentIndex < exams.length - 1) {
-                    const nextExam = exams[currentIndex + 1];
+          if (completedExamId) {
+               const currentIndex = sortedExams.findIndex(exam => exam.exam_id === completedExamId);
+
+               if (currentIndex >= 0 && currentIndex < sortedExams.length - 1) {
+                    const nextExam = sortedExams[currentIndex + 1];
                     const nextStatus = statuses.find(s => s.exam_id === nextExam.exam_id);
 
                     if (!nextStatus || nextStatus.status !== 'completed') {
@@ -71,7 +78,7 @@ export const useExamFlow = () => {
           }
 
           // Fallback: find first incomplete exam
-          for (const exam of exams) {
+          for (const exam of sortedExams) {
                const status = statuses.find(s => s.exam_id === exam.exam_id);
                if (!status || status.status !== 'completed') {
                     return exam;
