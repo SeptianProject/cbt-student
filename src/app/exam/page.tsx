@@ -20,17 +20,41 @@ const ExamPage = () => {
 
      useEffect(() => {
           if (userData?.assigned && userData.assigned.length > 0) {
-               // Sort by start_date ascending (ujian yang paling dulu dimulai akan dikerjakan terlebih dahulu)
-               const sortedExams = [...userData.assigned].sort((a, b) => {
+               // Filter out expired exams first
+               const validExams = userData.assigned.filter(exam => exam.status !== 'expired');
+
+               if (validExams.length === 0) {
+                    // All exams are expired, redirect to dashboard
+                    router.push('/dashboard');
+                    return;
+               }
+
+               // Sort valid exams by start_date ascending
+               const sortedExams = [...validExams].sort((a, b) => {
                     const dateA = new Date(a.start_date).getTime();
                     const dateB = new Date(b.start_date).getTime();
                     return dateA - dateB; // Ascending: ujian dengan start_date paling awal di depan
                });
-               const firstExam = sortedExams[0];
-               const examSlug = createExamSlug(firstExam.title);
 
-               localStorage.setItem('exam_id', firstExam.exam_id.toString());
-               localStorage.setItem('exam_duration', firstExam.duration.toString());
+               // Prioritize available exam that can be started
+               let selectedExam = sortedExams.find(exam =>
+                    exam.status === 'available' && exam.can_start
+               );
+
+               // Fallback to first upcoming exam if no available exam
+               if (!selectedExam) {
+                    selectedExam = sortedExams.find(exam => exam.status === 'upcoming');
+               }
+
+               // Final fallback to first valid exam
+               if (!selectedExam) {
+                    selectedExam = sortedExams[0];
+               }
+
+               const examSlug = createExamSlug(selectedExam.title);
+
+               localStorage.setItem('exam_id', selectedExam.exam_id.toString());
+               localStorage.setItem('exam_duration', selectedExam.duration.toString());
                localStorage.setItem('current_exam_slug', examSlug);
 
                router.push(`/exam/${examSlug}`);

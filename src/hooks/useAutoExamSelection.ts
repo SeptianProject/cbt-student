@@ -61,21 +61,39 @@ export const useAutoExamSelection = ({
 
           const statuses = getExamStatuses();
 
+          // Filter out expired exams - only work with available or upcoming exams
+          const validExams = exams.filter(exam => exam.status !== 'expired');
+
+          if (validExams.length === 0) return null;
+
           // Sort exams by start_date ascending (ujian yang lebih dulu dimulai dikerjakan terlebih dahulu)
-          const sortedExams = [...exams].sort((a, b) => {
+          const sortedExams = [...validExams].sort((a, b) => {
                const dateA = new Date(a.start_date).getTime();
                const dateB = new Date(b.start_date).getTime();
                return dateA - dateB;
           });
 
-          // Priority 1: Find exam in progress
+          // Priority 1: Find exam in progress (that's not expired)
           const inProgressStatus = statuses.find(s => s.status === 'in_progress');
           if (inProgressStatus) {
-               const inProgressExam = sortedExams.find(e => e.exam_id === inProgressStatus.exam_id);
+               const inProgressExam = sortedExams.find(e =>
+                    e.exam_id === inProgressStatus.exam_id &&
+                    e.status !== 'expired'
+               );
                if (inProgressExam) return inProgressExam;
           }
 
-          // Priority 2: Find first exam not started (in order)
+          // Priority 2: Find first available exam that can be started
+          const availableExam = sortedExams.find(exam =>
+               exam.status === 'available' && exam.can_start
+          );
+          if (availableExam) return availableExam;
+
+          // Priority 3: Find first upcoming exam (in order)
+          const upcomingExam = sortedExams.find(exam => exam.status === 'upcoming');
+          if (upcomingExam) return upcomingExam;
+
+          // Priority 4: Find first exam not started (in order) - fallback
           for (const exam of sortedExams) {
                const status = statuses.find(s => s.exam_id === exam.exam_id);
                if (!status || status.status === 'not_started') {
@@ -83,7 +101,7 @@ export const useAutoExamSelection = ({
                }
           }
 
-          // Priority 3: Return first exam if all are completed (for review)
+          // Priority 5: Return first valid exam if all are completed (for review)
           return sortedExams[0] || null;
      }, [getExamStatuses]);
 
