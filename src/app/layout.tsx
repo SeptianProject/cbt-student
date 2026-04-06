@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Providers from "@/components/providers";
 import ReduxProvider from "@/components/ReduxProvider";
@@ -29,12 +30,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${poppins.variable} font-sans antialiased`}>
         <ReduxProvider>
-          <Providers>
-            {children}
-          </Providers>
+          <Providers>{children}</Providers>
         </ReduxProvider>
+        <Analytics />
       </body>
     </html>
   );
