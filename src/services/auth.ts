@@ -38,7 +38,6 @@ export const authService = {
   logout: async (): Promise<void> => {
     await api.post("/logout");
     if (typeof window !== "undefined") {
-      // Clear all authentication and session data
       localStorage.removeItem("api_token");
       localStorage.removeItem("exam_id");
       localStorage.removeItem("exam_duration");
