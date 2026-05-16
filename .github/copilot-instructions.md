@@ -181,6 +181,43 @@ npm run start        # Start production server
 npm run lint         # Run ESLint
 ```
 
+## Quick Reference: Essential Files by Priority
+
+### 🔴 Must Read First (Foundation)
+
+| File                                                   | Purpose             | Key Pattern                              |
+| ------------------------------------------------------ | ------------------- | ---------------------------------------- |
+| [src/types/index.ts](src/types/index.ts)               | Type definitions    | Base types for exam, questions, answers  |
+| [src/store/examSlice.ts](src/store/examSlice.ts)       | Redux exam state    | Question fetching, answer storage, timer |
+| [src/hooks/useExamLogic.ts](src/hooks/useExamLogic.ts) | Master orchestrator | Combines all hooks and flows             |
+| [src/lib/api.ts](src/lib/api.ts)                       | Axios config        | Bearer token, response unwrapping        |
+
+### 🟡 Critical Hooks (Session Management)
+
+| File                                                                       | Purpose                           |
+| -------------------------------------------------------------------------- | --------------------------------- |
+| [src/hooks/useAutoSaveAnswer.ts](src/hooks/useAutoSaveAnswer.ts)           | 500ms debounced answer saves      |
+| [src/hooks/usePeriodicBackup.ts](src/hooks/usePeriodicBackup.ts)           | 2-minute bulk backup              |
+| [src/hooks/useRestoreAnswers.ts](src/hooks/useRestoreAnswers.ts)           | Restore on refresh                |
+| [src/hooks/useTimerPersistence.ts](src/hooks/useTimerPersistence.ts)       | Timer resilience across refreshes |
+| [src/hooks/useEnsureSessionId.ts](src/hooks/useEnsureSessionId.ts)         | localStorage session sync         |
+| [src/hooks/useRandomizedQuestions.ts](src/hooks/useRandomizedQuestions.ts) | Deterministic shuffle             |
+
+### 🟢 Utilities & Services
+
+| File                                                           | Purpose                             |
+| -------------------------------------------------------------- | ----------------------------------- |
+| [src/lib/examUtils.ts](src/lib/examUtils.ts)                   | Parse raw API data → typed objects  |
+| [src/lib/questionRandomizer.ts](src/lib/questionRandomizer.ts) | Seeded LCG shuffle algorithm        |
+| [src/services/exam.ts](src/services/exam.ts)                   | API wrapper (examStartSafe, submit) |
+
+### 🔵 Debug Tools (Development Only)
+
+- [src/lib/examDebugUtils.ts](src/lib/examDebugUtils.ts) — Log exam state + localStorage
+- `ExamDebugTools.tsx` / `ExamDebugToolsSimple.tsx` — UI for manual state inspection
+- [src/lib/imageTestUtils.ts](src/lib/imageTestUtils.ts) — Image question validation
+- [src/lib/complexMultipleChoiceTests.ts](src/lib/complexMultipleChoiceTests.ts) — Multi-answer validation
+
 ## Common Pitfalls
 
 ### 1. Session Token Loss
@@ -246,6 +283,38 @@ NEXT_PUBLIC_API_BASE_URL=https://api.example.com/api
 - Hook files: camelCase with `use` prefix (`useExamLogic.ts`)
 - Utility files: camelCase (`examUtils.ts`)
 
+## Golden Rules for Productivity
+
+Follow these patterns religiously to avoid 90% of bugs:
+
+1. **Never store server data in Redux** if a React Query hook exists for it
+   - ❌ `const data = useSelector(state => state.exam.userProfile)`
+   - ✅ `const { data } = useExamQuery.useUserProfile()`
+
+2. **Always check localStorage for session token** before API calls
+   - Use `useEnsureSessionId()` hook in every exam component
+   - Token is lost on refresh without localStorage persistence
+
+3. **Randomization seed must persist** across page refreshes
+   - Call `loadRandomizationData(examId)` from localStorage BEFORE re-randomizing
+   - Seed = `userId * 1000 + examId` → Don't recalculate
+
+4. **3-tier auto-save ensures zero answer loss**
+   - 500ms debounce (individual answers) → 2min bulk backup → restore on refresh
+   - Never skip any tier
+
+5. **Response unwrapping is automatic** (except `/submit` endpoint)
+   - API returns `{success: true, data: {...}}` → Unwrapped to `response.data = {...}`
+   - Submit endpoint keeps full structure for validation errors
+
+6. **15-minute submit window** is enforced by design
+   - Only allow manual submit in final 15 minutes before time-up
+   - Use `shouldAllowManualSubmit()` utility check
+
+7. **Timer persists via localStorage**, not in-memory
+   - On refresh, calculate elapsed time from `exam_start_time_{examId}`
+   - Never reset timer to full duration
+
 ## When Modifying Exam Flow
 
 1. **Check localStorage keys**: Don't introduce new keys without documenting
@@ -256,10 +325,58 @@ NEXT_PUBLIC_API_BASE_URL=https://api.example.com/api
 
 ## Testing Critical Paths
 
-1. Start exam → Refresh → Verify answers restored AND timer continues from last position
-2. Answer question → Wait 500ms → Check "Saved" indicator
-3. Wait 2 minutes → Check backup indicator
-4. Submit early → Should block (not in 15-min window)
-5. Time expires → Should force submit automatically
-6. Start exam → Wait 5 minutes → Refresh → Timer should show 5 minutes elapsed (not reset)
-7. Start exam → Wait 5 minutes → Refresh → Timer should show 5 minutes elapsed (not reset)
+⚠️ **Note**: No automated test framework (Jest/Vitest) configured. Testing is manual via browser + debug tools.
+
+### Testing Checklist
+
+Run through these scenarios to verify exam flow integrity:
+
+```
+✓ Session & Restore
+  - Start exam → Refresh page → Verify answers restored + timer continues from last position
+
+✓ Auto-Save Verification
+  - Answer a question → Wait 500ms → Verify "Saved" indicator appears
+
+✓ Periodic Backup
+  - Wait 2+ minutes during exam → Verify backup indicator shows scheduled backup completed
+
+✓ Submit Window Rules
+  - Try manual submit (not in final 15 minutes) → Should block with warning modal
+  - Try manual submit (within final 15 minutes) → Should allow
+
+✓ Time Expiration
+  - Let timer expire → Should force-submit automatically + redirect to /dashboard
+
+✓ Timer Persistence (Critical)
+  - Start exam → Wait 5 minutes → Refresh page → Timer should show ~5 minutes elapsed (NOT reset to full duration)
+
+✓ Randomization Consistency
+  - Check question order → Refresh page → Question order should NOT change
+  - Different user, same exam → Question order may differ (seed = userId * 1000 + examId)
+```
+
+### Using Debug Tools
+
+During development, enable debug output:
+
+```typescript
+// In ExamContent.tsx or relevant component
+import { logExamState } from "@/lib/examDebugUtils";
+
+// Call during exam to inspect state
+logExamState(examId, sessionId);
+```
+
+This outputs to console:
+
+- Current exam state (Redux)
+- All localStorage keys/values
+- Question randomization seed and mapping
+- Session token status
+
+### Key Test Files
+
+- [src/lib/examDebugUtils.ts](src/lib/examDebugUtils.ts) — State inspection + logging
+- [src/lib/imageTestUtils.ts](src/lib/imageTestUtils.ts) — Image question type validation
+- [src/lib/complexMultipleChoiceTests.ts](src/lib/complexMultipleChoiceTests.ts) — Complex MC answer validation
