@@ -11,6 +11,10 @@ interface UseForceExitDetectionResult {
   acknowledgeForceExit: () => void;
 }
 
+interface UseForceExitDetectionOptions {
+  enabled?: boolean;
+}
+
 /**
  * Hook untuk mendeteksi force exit state changes
  * - Monitor is_active=1 dan is_logout=1 condition
@@ -18,7 +22,10 @@ interface UseForceExitDetectionResult {
  * - Redirect ke locked page saat terdeteksi
  * - Provide way untuk acknowledge dan continue checking
  */
-export function useForceExitDetection(): UseForceExitDetectionResult {
+export function useForceExitDetection(
+  options: UseForceExitDetectionOptions = {},
+): UseForceExitDetectionResult {
+  const { enabled = true } = options;
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { is_active, is_logout, force_exit } = useAppSelector(
@@ -29,6 +36,8 @@ export function useForceExitDetection(): UseForceExitDetectionResult {
   const hasTriggeredRef = useRef(false);
 
   useEffect(() => {
+    if (!enabled) return;
+
     // Check if force exit condition is met: is_active=1 && is_logout=1 OR force_exit flag
     const isForcedExit = force_exit || (is_active && is_logout);
 
@@ -70,7 +79,15 @@ export function useForceExitDetection(): UseForceExitDetectionResult {
       setForceExitReason(null);
       hasTriggeredRef.current = false;
     }
-  }, [force_exit, is_active, is_logout, dispatch, router, isForceExited]);
+  }, [
+    enabled,
+    force_exit,
+    is_active,
+    is_logout,
+    dispatch,
+    router,
+    isForceExited,
+  ]);
 
   const acknowledgeForceExit = () => {
     // Reset flag so we can detect next force exit

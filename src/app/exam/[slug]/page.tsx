@@ -2,12 +2,9 @@
 
 import Content from "@/components/exam/ExamContent";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { SessionErrorHandler } from "@/components/exam/SessionErrorHandler";
 import { ExamStartConfirmation } from "@/components/exam/ExamStartConfirmation";
 import { Button } from "@/components/ui/button";
-import { examService } from "@/services/exam";
 import { findExamBySlug } from "@/lib/examUtils";
-import { useMutation } from "@tanstack/react-query";
 import { useRouter, useParams } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
 import { resetExamState } from "@/store/examSlice";
@@ -20,7 +17,6 @@ export default function ExamDetailPage() {
   const slug = params.slug as string;
   const dispatch = useAppDispatch();
   const [confirmed, setConfirmed] = React.useState(false);
-  const [showSessionError, setShowSessionError] = React.useState(false);
 
   const { data: userData } = useCurrentUser(true);
 
@@ -36,59 +32,13 @@ export default function ExamDetailPage() {
     return findExamBySlug(userData.assigned, slug);
   }, [userData?.assigned, slug]);
 
-  const examMutation = useMutation({
-    mutationFn: () => {
-      if (!currentExam) {
-        throw new Error("Exam not found");
-      }
-      localStorage.setItem("exam_id", currentExam.exam_id.toString());
-      localStorage.setItem("exam_duration", currentExam.duration.toString());
-      localStorage.setItem("current_exam_slug", slug);
-
-      return examService.examStartSafe(currentExam.exam_id);
-    },
-    onSuccess: () => {
-      setShowSessionError(false);
-      router.push(`/exam/${slug}/start`);
-    },
-    onError: (error) => {
-      console.error("Failed to start exam:", error);
-      const axiosError = error as {
-        response?: { status?: number; data?: { message?: string } };
-      };
-
-      // Check if it's a session conflict error
-      if (
-        axiosError?.response?.status === 422 &&
-        axiosError?.response?.data?.message?.includes("sesi ujian yang aktif")
-      ) {
-        setShowSessionError(true);
-      } else {
-        alert(
-          "Tidak dapat memulai ujian. Pastikan koneksi internet Anda stabil, lalu coba lagi.",
-        );
-      }
-    },
-  });
-
-  const handleSessionCleared = () => {
-    setShowSessionError(false);
-    // Retry starting exam after clearing session
-    examMutation.mutate();
-  };
-
   const handleConfirm = () => {
     setConfirmed(true);
+    router.push(`/exam/${slug}/start`);
   };
 
   const handleStartExam = () => {
-    if (!currentExam) {
-      alert(
-        "Ujian tidak ditemukan atau belum tersedia. Silakan kembali ke daftar ujian.",
-      );
-      return;
-    }
-    examMutation.mutate();
+    router.push(`/exam/${slug}/start`);
   };
 
   if (userData?.assigned && !currentExam && slug) {
@@ -130,30 +80,22 @@ export default function ExamDetailPage() {
       <div className="relative flex flex-col justify-between gap-10 p-4 sm:p-8 md:p-10 lg:p-12 min-h-screen bg-white">
         <ExamStartConfirmation
           isVisible={confirmed}
-          isPending={examMutation.isPending}
-          isSuccess={examMutation.isSuccess}
+          isPending={false}
+          isSuccess={false}
           onConfirm={handleStartExam}
           onCancel={() => setConfirmed(false)}
         />
 
         <Content userData={userData} />
 
-        {showSessionError && currentExam ? (
-          <SessionErrorHandler
-            examId={currentExam.exam_id}
-            onSuccess={handleSessionCleared}
-            onCancel={() => setShowSessionError(false)}
-          />
-        ) : (
-          <div className="flex justify-center">
-            <Button
-              className={`px-8 py-3 text-lg ${examMutation.isPending || !currentExam.can_start ? "cursor-not-allowed bg-slate-500" : "bg-blue-600 hover:bg-blue-700"}`}
-              onClick={handleConfirm}
-              disabled={examMutation.isPending || !currentExam.can_start}>
-              {currentExam.can_start ? "Mulai Ujian" : "Ujian Belum Tersedia"}
-            </Button>
-          </div>
-        )}
+        <div className="flex justify-center">
+          <Button
+            className={`px-8 py-3 text-lg ${!currentExam.can_start ? "cursor-not-allowed bg-slate-500" : "bg-blue-600 hover:bg-blue-700"}`}
+            onClick={handleConfirm}
+            disabled={!currentExam.can_start}>
+            {currentExam.can_start ? "Mulai Ujian" : "Ujian Belum Tersedia"}
+          </Button>
+        </div>
       </div>
     </ProtectedRoute>
   );

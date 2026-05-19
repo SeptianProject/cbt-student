@@ -1,10 +1,10 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthStateProtection } from "@/hooks/useAuthStateProtection";
 import { useForceExitDetection } from "@/hooks/useForceExitDetection";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAppSelector } from "@/store/hooks";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,9 +16,12 @@ export default function ProtectedRoute({
   requireExamAccess = true,
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, isUnauthenticated } = useAuth();
-  const { canAccessExam, shouldShowLockout, shouldShowCompleted, accessLevel } =
-    useAuthStateProtection();
-  const { isForceExited, forceExitReason } = useForceExitDetection();
+  const sessionStatus = useAppSelector((state) => state.exam.sessionStatus);
+  const shouldEnforceExamLock =
+    requireExamAccess && sessionStatus === "progress";
+  const { isForceExited, forceExitReason } = useForceExitDetection({
+    enabled: shouldEnforceExamLock,
+  });
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -34,25 +37,12 @@ export default function ProtectedRoute({
 
   // Enforce state protection if this is an exam page
   useEffect(() => {
-    if (mounted && isAuthenticated && requireExamAccess) {
-      // Force exit takes priority - redirect to locked page
+    if (mounted && isAuthenticated && shouldEnforceExamLock) {
       if (isForceExited) {
         router.push("/exam/locked");
-      } else if (shouldShowLockout) {
-        router.push("/exam/locked");
-      } else if (shouldShowCompleted) {
-        router.push("/dashboard");
       }
     }
-  }, [
-    mounted,
-    isAuthenticated,
-    isForceExited,
-    shouldShowLockout,
-    shouldShowCompleted,
-    requireExamAccess,
-    router,
-  ]);
+  }, [mounted, isAuthenticated, isForceExited, shouldEnforceExamLock, router]);
 
   if (!mounted) {
     return null;
@@ -71,14 +61,9 @@ export default function ProtectedRoute({
   }
 
   // If this is an exam page and state protection is required
-  if (requireExamAccess) {
+  if (shouldEnforceExamLock) {
     if (isForceExited) {
       // Force exit state - don't render content, let redirect happen
-      return null;
-    }
-
-    if (!canAccessExam) {
-      // Not authorized to access exam
       return null;
     }
   }

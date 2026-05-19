@@ -34,6 +34,7 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   const { is_active, is_logout, session_id } = useAppSelector(
     (state) => state.auth,
   );
+  const sessionStatus = useAppSelector((state) => state.exam.sessionStatus);
   const examId = useAppSelector((state) => state.exam.currentExam?.exam_id);
   const cheatReportedRef = useRef(false);
   const mountedAtRef = useRef<number>(Date.now());
@@ -139,7 +140,9 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   );
 
   useEffect(() => {
-    if (!enabled || !is_active || is_logout) return;
+    if (!enabled || sessionStatus !== "progress" || !is_active || is_logout) {
+      return;
+    }
 
     const handleVisibilityChange = async () => {
       if (debugMode) console.log("Visibility changed:", document.hidden);
@@ -192,6 +195,7 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
     enabled,
     is_active,
     is_logout,
+    sessionStatus,
     examId,
     dispatch,
     onCheatDetected,
