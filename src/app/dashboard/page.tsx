@@ -8,7 +8,7 @@ import { useAuthStateProtection } from "@/hooks/useAuthStateProtection";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { StudentInfoCard } from "@/components/dashboard/StudentInfoCard";
 import { DashboardActions } from "@/components/dashboard/DashboardActions";
-import { AlertCircle, CheckCircle, Lock } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 const DashboardPage = () => {
   const router = useRouter();
@@ -62,34 +62,6 @@ const DashboardPage = () => {
     }
   };
 
-  // Determine account status (prefer API-derived flags)
-  const getAccountStatus = () => {
-    if (!effectiveIsActive && effectiveIsLogout) {
-      return {
-        type: "locked",
-        label: "Akun Terkunci",
-        icon: <Lock className="h-5 w-5 text-red-600" />,
-        bgColor: "bg-red-50",
-        borderColor: "border-red-200",
-        textColor: "text-red-700",
-        message: effectiveIsLogout
-          ? "Akun Anda dalam status terkunci. Hubungi proktor untuk membuka kunci."
-          : "Akun Anda sedang tidak aktif.",
-      };
-    }
-    return {
-      type: "normal",
-      label: "Akun Normal",
-      icon: <CheckCircle className="h-5 w-5 text-green-600" />,
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
-      textColor: "text-green-700",
-      message: "Akun Anda dalam status normal dan dapat mengakses ujian.",
-    };
-  };
-
-  const accountStatus = getAccountStatus();
-
   return (
     <ProtectedRoute requireExamAccess={false}>
       {isLoading && (
@@ -114,20 +86,6 @@ const DashboardPage = () => {
       {!isLoading && !error && userData?.success && userData.student && (
         <div className="min-h-screen bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 flex flex-col items-center justify-center p-4">
           {/* Status Badge */}
-          <div
-            className={`mb-6 max-w-md w-full rounded-lg border-l-4 p-4 ${accountStatus.bgColor} ${accountStatus.borderColor}`}>
-            <div className="flex items-center gap-3">
-              {accountStatus.icon}
-              <div>
-                <p className={`font-semibold ${accountStatus.textColor}`}>
-                  {accountStatus.label}
-                </p>
-                <p className={`text-sm ${accountStatus.textColor}`}>
-                  {accountStatus.message}
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* Lock Warning if needed */}
           {!effectiveCanAccessExam && (
@@ -144,32 +102,6 @@ const DashboardPage = () => {
                   </p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Dev debug: show effective auth flags to diagnose button state */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mt-4 max-w-md w-full p-3 bg-gray-50 border rounded text-xs font-mono">
-              <div className="mb-2 font-semibold">Auth Debug</div>
-              <pre className="whitespace-pre-wrap">
-                {JSON.stringify(
-                  {
-                    apiUser: apiUser
-                      ? {
-                          is_active: apiUser.is_active,
-                          is_logout: apiUser.is_logout,
-                        }
-                      : null,
-                    redux: { is_active, is_logout, force_exit },
-                    effectiveIsActive,
-                    effectiveIsLogout,
-                    effectiveCanAccessExam,
-                    canAccessExam,
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
             </div>
           )}
 
