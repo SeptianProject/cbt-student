@@ -121,6 +121,16 @@ const examSlice = createSlice({
      name: 'exam',
      initialState,
      reducers: {
+          primeExamSession(
+               state: Draft<ExamState>,
+               action: PayloadAction<{
+                    currentExam: AssignedExam | null;
+                    sessionStatus: ExamState['sessionStatus'];
+               }>,
+          ) {
+               state.currentExam = action.payload.currentExam;
+               state.sessionStatus = action.payload.sessionStatus;
+          },
           setAnswers(state: Draft<ExamState>, action: PayloadAction<{ questionId: number; answer: string | string[] }>) {
                const { questionId, answer } = action.payload;
 
@@ -395,6 +405,7 @@ export const {
      setTimeRemaining,
      setShowSubmitModal,
      setIsExamEnded,
+     primeExamSession,
      resetExamState,
      setSubmitResult,
 } = examSlice.actions;

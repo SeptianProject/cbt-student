@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   fetchExam,
+  primeExamSession,
   setAnswers,
   setFlag,
   setShowSubmitModal,
@@ -13,7 +14,11 @@ import {
   setTimeRemaining,
 } from "@/store/examSlice";
 import { getCurrentUser } from "@/store/authSlice";
-import { validateAnswers, areAllQuestionsAnswered } from "@/lib/examUtils";
+import {
+  validateAnswers,
+  areAllQuestionsAnswered,
+  findExamBySlug,
+} from "@/lib/examUtils";
 import { useAutoSaveAnswer } from "./useAutoSaveAnswer";
 import { useRestoreAnswers } from "./useRestoreAnswers";
 import { usePeriodicBackup } from "./usePeriodicBackup";
@@ -123,6 +128,29 @@ export const useExamLogic = () => {
     queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     dispatch(getCurrentUser()); // Also update Redux store
   }, [slug, dispatch, queryClient]);
+
+  useEffect(() => {
+    if (!userData?.assigned || !slug) {
+      return;
+    }
+
+    const currentExamFromAssigned = findExamBySlug(userData.assigned, slug);
+    if (!currentExamFromAssigned) {
+      return;
+    }
+
+    const hasActiveSession =
+      typeof window !== "undefined" &&
+      Boolean(localStorage.getItem("session_token")) &&
+      Boolean(localStorage.getItem("session_id"));
+
+    dispatch(
+      primeExamSession({
+        currentExam: currentExamFromAssigned,
+        sessionStatus: hasActiveSession ? "progress" : null,
+      }),
+    );
+  }, [userData?.assigned, slug, dispatch]);
 
   useEffect(() => {
     if (userData?.assigned && slug && userData.student?.id) {

@@ -143,10 +143,15 @@ const authSlice = createSlice({
     },
     updateAuthState(
       state: Draft<AuthState>,
-      action: PayloadAction<{ is_active: boolean; is_logout: boolean }>,
+      action: PayloadAction<{ is_active?: boolean; is_logout?: boolean }>,
     ) {
-      state.is_active = action.payload.is_active;
-      state.is_logout = action.payload.is_logout;
+      if (action.payload.is_active !== undefined) {
+        state.is_active = action.payload.is_active;
+      }
+
+      if (action.payload.is_logout !== undefined) {
+        state.is_logout = action.payload.is_logout;
+      }
     },
   },
   extraReducers: (builder) => {

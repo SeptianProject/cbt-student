@@ -43,6 +43,16 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
     [],
   );
 
+  useEffect(() => {
+    console.log("[CHEAT GUARD CHECK]", {
+      enabled,
+      sessionStatus,
+      is_active,
+      is_logout,
+      examId,
+    });
+  }, [enabled, sessionStatus, is_active, is_logout, examId]);
+
   const handleRedirectToLocked = useCallback(() => {
     // Clear exam session data
     if (typeof window !== "undefined") {

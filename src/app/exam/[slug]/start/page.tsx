@@ -68,12 +68,8 @@ export default function ExamStartPage() {
   } = useExamLogic();
 
   React.useEffect(() => {
-    dispatch(resetExamState());
-    localStorage.removeItem("exam_result");
-  }, [dispatch]);
-
-  React.useEffect(() => {
     if (isExamEnded) {
+      dispatch(resetExamState());
       localStorage.removeItem("session_token");
       localStorage.removeItem("session_id");
       localStorage.removeItem("exam_result");
