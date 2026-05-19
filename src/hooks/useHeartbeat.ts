@@ -4,7 +4,11 @@ import { useEffect, useRef } from "react";
 import axios from "axios";
 import { authService } from "@/services/auth";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setForceExit, updateAuthState } from "@/store/authSlice";
+import {
+  clearForceExit,
+  setForceExit,
+  updateAuthState,
+} from "@/store/authSlice";
 
 interface UseHeartbeatOptions {
   intervalMs?: number; // Custom interval (default: 2 minutes)

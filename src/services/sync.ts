@@ -103,10 +103,12 @@ export const stateSyncService = {
       }
 
       // If forced to lockout, redirect
-      if (
-        !authState.is_active ||
-        (authState.is_active === false && authState.is_logout === false)
-      ) {
+      const shouldLockout =
+        authState.force_exit === true ||
+        (!authState.is_active && !authState.is_logout) ||
+        (authState.is_active && authState.is_logout);
+
+      if (shouldLockout) {
         localStorage.setItem("force_exit", "true");
         window.location.href = "/exam/locked";
         return;
