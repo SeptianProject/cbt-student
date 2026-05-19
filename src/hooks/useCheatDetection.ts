@@ -31,9 +31,7 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
 
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { is_active, is_logout, session_id } = useAppSelector(
-    (state) => state.auth,
-  );
+  const { is_active, is_logout } = useAppSelector((state) => state.auth);
   const sessionStatus = useAppSelector((state) => state.exam.sessionStatus);
   const examId = useAppSelector((state) => state.exam.currentExam?.exam_id);
   const cheatReportedRef = useRef(false);
@@ -70,10 +68,14 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   const triggerForceExit = useCallback(
     async (reason: string) => {
       try {
+        console.log("[CHEAT DETECTED]", {
+          trigger: reason,
+          timestamp: new Date(),
+        });
         if (debugMode) console.log(`Cheat detected: ${reason}`);
         if (onCheatDetected) onCheatDetected();
 
-        // Call force-exit endpoint with exam_id
+        // Call force-exit endpoint with exam_id (best-effort)
         if (examId) {
           try {
             await authService.examForceExit(examId);
@@ -167,29 +169,77 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
       }
     };
 
-    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+    const sendBeaconForceExit = (reason: string) => {
+      try {
+        if (
+          typeof navigator !== "undefined" &&
+          navigator.sendBeacon &&
+          examId
+        ) {
+          const base = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+          const url = `${base.replace(/\/$/, "")}/exam/force-exit`;
+          const session_token =
+            typeof window !== "undefined"
+              ? localStorage.getItem("session_token")
+              : null;
+          const payload = JSON.stringify({
+            exam_id: examId,
+            session_token,
+            reason,
+          });
+          const blob = new Blob([payload], { type: "application/json" });
+          navigator.sendBeacon(url, blob);
+          if (debugMode) console.log("Sent beacon to force-exit endpoint", url);
+        }
+      } catch (err) {
+        if (debugMode) console.error("Beacon send failed", err);
+      }
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (debugMode) console.log("Before unload triggered");
 
       if (!isMonitoringReady()) return;
 
       if (!cheatReportedRef.current) {
         cheatReportedRef.current = true;
+        // Try to send a synchronous beacon so the backend knows immediately
+        sendBeaconForceExit("BEFORE_UNLOAD");
+        // Also attempt async request (best-effort)
+        void triggerForceExit("BEFORE_UNLOAD");
+
+        // Standard beforeunload UX behaviour
         e.preventDefault();
         e.returnValue = "";
-        await triggerForceExit("BEFORE_UNLOAD");
       }
+    };
+
+    const handleKeyDown = async (ev: KeyboardEvent) => {
+      // Best-effort detection for Alt+Tab / Cmd+Tab when the browser receives it.
+      if (ev.key !== "Tab" || (!ev.altKey && !ev.metaKey)) {
+        return;
+      }
+
+      if (cheatReportedRef.current || !isMonitoringReady()) {
+        return;
+      }
+
+      cheatReportedRef.current = true;
+      await triggerForceExit("ALT_TAB");
     };
 
     // Add event listeners
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("blur", handleWindowBlur);
     window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       // Remove event listeners on cleanup
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleWindowBlur);
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
     enabled,
