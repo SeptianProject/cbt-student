@@ -4,13 +4,21 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/useAuthQuery";
+import { useAuthStateProtection } from "@/hooks/useAuthStateProtection";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { StudentInfoCard } from "@/components/dashboard/StudentInfoCard";
 import { DashboardActions } from "@/components/dashboard/DashboardActions";
+import { AlertCircle, CheckCircle, Lock } from "lucide-react";
 
 const DashboardPage = () => {
   const router = useRouter();
-  const [hasToken, setHasToken] = useState(false);
+  const [hasToken, setHasToken] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return !!localStorage.getItem("api_token");
+  });
 
   // Check if token exists in localStorage
   useEffect(() => {
@@ -21,6 +29,20 @@ const DashboardPage = () => {
   }, []);
 
   const { data: userData, isLoading, error } = useCurrentUser(hasToken);
+  const { is_active, is_logout, force_exit, canAccessExam } =
+    useAuthStateProtection();
+
+  // Prefer latest flags from API (`userData`) when available to avoid
+  // transient locked state before Redux is updated.
+  const apiUser = userData?.student?.user;
+  const effectiveIsActive = apiUser?.is_active ?? is_active;
+  const effectiveIsLogout = apiUser?.is_logout ?? is_logout;
+
+  const effectiveCanAccessExam =
+    canAccessExam ||
+    (force_exit !== true &&
+      effectiveIsActive === true &&
+      effectiveIsLogout === false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("id-ID", {
@@ -35,11 +57,41 @@ const DashboardPage = () => {
   };
 
   const handleContinue = () => {
-    router.push("/exam");
+    if (effectiveCanAccessExam) {
+      router.push("/exam");
+    }
   };
 
+  // Determine account status (prefer API-derived flags)
+  const getAccountStatus = () => {
+    if (!effectiveIsActive && effectiveIsLogout) {
+      return {
+        type: "locked",
+        label: "Akun Terkunci",
+        icon: <Lock className="h-5 w-5 text-red-600" />,
+        bgColor: "bg-red-50",
+        borderColor: "border-red-200",
+        textColor: "text-red-700",
+        message: effectiveIsLogout
+          ? "Akun Anda dalam status terkunci. Hubungi proktor untuk membuka kunci."
+          : "Akun Anda sedang tidak aktif.",
+      };
+    }
+    return {
+      type: "normal",
+      label: "Akun Normal",
+      icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      textColor: "text-green-700",
+      message: "Akun Anda dalam status normal dan dapat mengakses ujian.",
+    };
+  };
+
+  const accountStatus = getAccountStatus();
+
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requireExamAccess={false}>
       {isLoading && (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">
@@ -61,6 +113,66 @@ const DashboardPage = () => {
 
       {!isLoading && !error && userData?.success && userData.student && (
         <div className="min-h-screen bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 flex flex-col items-center justify-center p-4">
+          {/* Status Badge */}
+          <div
+            className={`mb-6 max-w-md w-full rounded-lg border-l-4 p-4 ${accountStatus.bgColor} ${accountStatus.borderColor}`}>
+            <div className="flex items-center gap-3">
+              {accountStatus.icon}
+              <div>
+                <p className={`font-semibold ${accountStatus.textColor}`}>
+                  {accountStatus.label}
+                </p>
+                <p className={`text-sm ${accountStatus.textColor}`}>
+                  {accountStatus.message}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Lock Warning if needed */}
+          {!effectiveCanAccessExam && (
+            <div className="mb-6 max-w-md w-full rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-red-700 mb-1">
+                    Akses Ujian Diblokir
+                  </p>
+                  <p className="text-sm text-red-600">
+                    Akun Anda sedang dalam status terkunci. Hubungi proktor
+                    untuk membuka kunci akun Anda agar dapat mengakses ujian.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Dev debug: show effective auth flags to diagnose button state */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="mt-4 max-w-md w-full p-3 bg-gray-50 border rounded text-xs font-mono">
+              <div className="mb-2 font-semibold">Auth Debug</div>
+              <pre className="whitespace-pre-wrap">
+                {JSON.stringify(
+                  {
+                    apiUser: apiUser
+                      ? {
+                          is_active: apiUser.is_active,
+                          is_logout: apiUser.is_logout,
+                        }
+                      : null,
+                    redux: { is_active, is_logout, force_exit },
+                    effectiveIsActive,
+                    effectiveIsLogout,
+                    effectiveCanAccessExam,
+                    canAccessExam,
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            </div>
+          )}
+
           <StudentInfoCard
             student={userData.student}
             formatDate={formatDate}
@@ -70,6 +182,7 @@ const DashboardPage = () => {
           <DashboardActions
             hasExams={!!userData.assigned && userData.assigned.length > 0}
             onContinueToExam={handleContinue}
+            canAccess={effectiveCanAccessExam}
           />
         </div>
       )}

@@ -10,12 +10,26 @@ import { ExamMainContent } from "@/components/exam/ExamMainContent";
 import { ExamNavigationFooter } from "@/components/exam/ExamNavigationFooter";
 import { ExamSubmitModal } from "@/components/exam/ExamSubmitModal";
 import { useExamLogic } from "@/hooks/useExamLogic";
+import { useCheatDetection } from "@/hooks/useCheatDetection";
+import { useSyncAuthStateOnExamEnd } from "@/hooks/useSyncAuthStateOnExamEnd";
 import { useAppDispatch } from "@/store/hooks";
 import { resetExamState } from "@/store/examSlice";
 
 export default function ExamStartPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+
+  // Enable cheat detection for this exam session
+  useCheatDetection({
+    enabled: true,
+    debugMode: false,
+    onCheatDetected: () => {
+      console.warn("Cheat attempt detected during exam");
+    },
+  });
+
+  // Sync auth state when exam submission completes
+  useSyncAuthStateOnExamEnd();
 
   const {
     userData,

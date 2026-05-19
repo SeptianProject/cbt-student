@@ -11,7 +11,9 @@ import { findExamBySlug } from "@/lib/examUtils";
 import { useExamCompletion } from "@/hooks/useExamCompletion";
 import { ExamCompletionActions } from "@/components/exam/ExamCompletionActions";
 
-export default function ExamCompletePage() {
+export default function ExamCompletePage(
+  
+) {
   const params = useParams();
   const currentSlug = params.slug as string;
 

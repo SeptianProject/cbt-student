@@ -1,5 +1,13 @@
 import api from "@/lib/api";
-import { DashboardExam, User } from "@/types";
+import {
+  DashboardExam,
+  User,
+  ExamStartResponse,
+  ExamSubmitRequest,
+  ExamSubmitResponse,
+  ExamStatusResponse,
+  HeartbeatResponse,
+} from "@/types";
 import axios from "axios";
 
 export const authService = {
@@ -70,7 +78,69 @@ export const authService = {
     return response.data;
   },
 
-  heartbeat: async (): Promise<void> => {
-    await api.post("/siswa/heartbeat");
+  // Exam-related endpoints
+  heartbeat: async (): Promise<HeartbeatResponse> => {
+    const response = await api.post<HeartbeatResponse>("/siswa/heartbeat");
+    return response.data;
+  },
+
+  examStart: async (examId: number): Promise<ExamStartResponse> => {
+    const response = await api.post<ExamStartResponse>(
+      `/siswa/exams/${examId}/start`,
+      {},
+    );
+    if (
+      typeof window !== "undefined" &&
+      response.data.session_token &&
+      response.data.session_id
+    ) {
+      localStorage.setItem("session_token", response.data.session_token);
+      localStorage.setItem("session_id", response.data.session_id.toString());
+      localStorage.setItem("exam_id", examId.toString());
+    }
+    return response.data;
+  },
+
+  examSubmit: async (
+    examId: number,
+    data: ExamSubmitRequest,
+  ): Promise<ExamSubmitResponse> => {
+    const response = await api.post<ExamSubmitResponse>(
+      `/siswa/exams/${examId}/submit`,
+      data,
+    );
+    // Don't unwrap submit response - keep full structure for validation
+    return response.data;
+  },
+
+  examForceExit: async (examId: number): Promise<{ success: boolean }> => {
+    const sessionToken =
+      typeof window !== "undefined"
+        ? localStorage.getItem("session_token")
+        : null;
+    const response = await api.post<{ success: boolean }>("/exam/force-exit", {
+      exam_id: examId,
+      session_token: sessionToken,
+    });
+    return response.data;
+  },
+
+  examStatus: async (examId: number): Promise<ExamStatusResponse> => {
+    const response = await api.get<ExamStatusResponse>(
+      `/siswa/exams/${examId}/status`,
+    );
+    return response.data;
+  },
+
+  proctorReactivate: async (
+    studentId: number,
+  ): Promise<{ success: boolean; user: User }> => {
+    const response = await api.post<{ success: boolean; user: User }>(
+      `/proctor/reactivate`,
+      {
+        student_id: studentId,
+      },
+    );
+    return response.data;
   },
 };

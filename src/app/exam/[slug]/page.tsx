@@ -5,14 +5,14 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { SessionErrorHandler } from "@/components/exam/SessionErrorHandler";
 import { ExamStartConfirmation } from "@/components/exam/ExamStartConfirmation";
 import { Button } from "@/components/ui/button";
-import { authService } from "@/services/auth";
 import { examService } from "@/services/exam";
 import { findExamBySlug } from "@/lib/examUtils";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter, useParams } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
 import { resetExamState } from "@/store/examSlice";
 import React from "react";
+import { useCurrentUser } from "@/hooks/useAuthQuery";
 
 export default function ExamDetailPage() {
   const router = useRouter();
@@ -22,12 +22,7 @@ export default function ExamDetailPage() {
   const [confirmed, setConfirmed] = React.useState(false);
   const [showSessionError, setShowSessionError] = React.useState(false);
 
-  const { data: userData } = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: () => authService.getCurrentUser(),
-    staleTime: 0, // Always fetch fresh data
-    refetchOnMount: "always", // Always refetch when component mounts
-  });
+  const { data: userData } = useCurrentUser(true);
 
   React.useEffect(() => {
     dispatch(resetExamState());
