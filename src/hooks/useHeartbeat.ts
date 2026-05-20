@@ -78,7 +78,7 @@ export function useHeartbeat(options: UseHeartbeatOptions = {}): void {
           if (typeof window !== "undefined") {
             localStorage.setItem("force_exit", "true");
             localStorage.setItem("force_exit_reason", "heartbeat_detected");
-            window.location.href = "/exam/locked";
+            window.location.href = "/dashboard";
           }
         }
       } catch (error) {
@@ -106,7 +106,7 @@ export function useHeartbeat(options: UseHeartbeatOptions = {}): void {
                   "force_exit_reason",
                   "heartbeat_403_error",
                 );
-                window.location.href = "/exam/locked";
+                window.location.href = "/dashboard";
               }
               return;
             }

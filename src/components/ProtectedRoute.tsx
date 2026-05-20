@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useForceExitDetection } from "@/hooks/useForceExitDetection";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAppSelector } from "@/store/hooks";
 
 interface ProtectedRouteProps {
@@ -24,6 +24,7 @@ export default function ProtectedRoute({
   });
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -38,8 +39,9 @@ export default function ProtectedRoute({
   // Enforce state protection if this is an exam page
   useEffect(() => {
     if (mounted && isAuthenticated && shouldEnforceExamLock) {
-      if (isForceExited) {
-        router.push("/exam/locked");
+      if (isForceExited && !hasRedirectedRef.current) {
+        hasRedirectedRef.current = true;
+        router.push("/dashboard");
       }
     }
   }, [mounted, isAuthenticated, isForceExited, shouldEnforceExamLock, router]);

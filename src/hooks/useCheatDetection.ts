@@ -72,12 +72,12 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
     // Use router.push for client-side navigation (SSR safe)
     // Fallback to window.location if router fails
     try {
-      router.push("/exam/locked");
+      router.push("/dashboard");
     } catch (err) {
       if (debugMode)
         console.error("Router push failed, using window.location:", err);
       if (typeof window !== "undefined") {
-        window.location.href = "/exam/locked";
+        window.location.href = "/dashboard";
       }
     }
   }, [router, debugMode]);

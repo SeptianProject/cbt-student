@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth";
+import axios from "axios";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setToken, clearAuth, updateAuthState } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
@@ -18,8 +19,18 @@ export const useLoginMutation = () => {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      authService.login(email, password),
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      try {
+        return await authService.login(email, password);
+      } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 403) {
+          throw new Error(
+            "Akun Anda terkunci. Hubungi pengawas untuk membuka kunci.",
+          );
+        }
+        throw error;
+      }
+    },
     onSuccess: (data) => {
       // Save user state from login response
       if (data.user.is_active !== undefined) {
@@ -48,8 +59,8 @@ export const useLoginMutation = () => {
 
       router.push("/dashboard");
     },
-    onError: (error: Error) => {
-      console.error("Login failed:", error.message);
+    onError: () => {
+      // Error will be shown in the UI via mutation error state
     },
   });
 };
@@ -92,6 +103,9 @@ export const useCurrentUser = (enabled: boolean = true) => {
     enabled, // Only fetch when enabled (e.g., when user is authenticated)
     staleTime: 0, // Always fetch fresh data to ensure latest assigned exams
     refetchOnMount: "always", // Always refetch when component mounts
+    refetchOnWindowFocus: false,
+    // Disable automatic retries to avoid retry loops on 4xx errors (403 locked account)
+    retry: false,
   });
 
   useEffect(() => {

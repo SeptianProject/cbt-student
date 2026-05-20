@@ -53,7 +53,7 @@ export function useLogoutForceExit(): UseLogoutForceExitResult {
         }
 
         // Redirect to locked page
-        router.push("/exam/locked");
+        router.push("/dashboard");
       } else {
         // No active exam session, do normal logout
         await handleLogoutNormal();

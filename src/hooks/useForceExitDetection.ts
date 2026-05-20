@@ -67,7 +67,7 @@ export function useForceExitDetection(
 
       // Redirect after a short delay to allow state updates
       const timer = setTimeout(() => {
-        router.push("/exam/locked");
+        router.push("/dashboard");
       }, 500);
 
       return () => clearTimeout(timer);

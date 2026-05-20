@@ -54,7 +54,7 @@ api.interceptors.response.use(
           localStorage.setItem("force_exit", "true");
           localStorage.removeItem("session_token");
           localStorage.removeItem("session_id");
-          window.location.href = "/exam/locked";
+          window.location.href = "/dashboard";
         }
       }
     }

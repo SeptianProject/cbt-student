@@ -8,10 +8,13 @@ import { useAuthStateProtection } from "@/hooks/useAuthStateProtection";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { StudentInfoCard } from "@/components/dashboard/StudentInfoCard";
 import { DashboardActions } from "@/components/dashboard/DashboardActions";
-import { AlertCircle } from "lucide-react";
+import { Lock } from "lucide-react";
+import { useAppDispatch } from "@/store/hooks";
+import { clearForceExit, updateAuthState } from "@/store/authSlice";
 
 const DashboardPage = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [hasToken, setHasToken] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -28,7 +31,13 @@ const DashboardPage = () => {
     }
   }, []);
 
-  const { data: userData, isLoading, error } = useCurrentUser(hasToken);
+  const {
+    data: userData,
+    isLoading,
+    error,
+    refetch,
+    isRefetching,
+  } = useCurrentUser(hasToken);
   const { is_active, is_logout, force_exit } = useAuthStateProtection();
 
   // Prefer latest flags from API (`userData`) when available to avoid
@@ -52,6 +61,25 @@ const DashboardPage = () => {
 
   const formatGender = (gender: string) => {
     return gender === "L" ? "Laki-laki" : "Perempuan";
+  };
+
+  const handleCheckStatus = async () => {
+    const result = await refetch();
+    const apiUser = result.data?.student?.user;
+
+    if (apiUser?.is_active && !apiUser?.is_logout) {
+      localStorage.removeItem("force_exit");
+      localStorage.removeItem("force_exit_reason");
+      localStorage.removeItem("user_is_logout");
+      localStorage.removeItem("user_is_active");
+      dispatch(
+        updateAuthState({
+          is_active: true,
+          is_logout: false,
+        }),
+      );
+      dispatch(clearForceExit());
+    }
   };
 
   const handleContinue = () => {
@@ -87,19 +115,36 @@ const DashboardPage = () => {
 
           {/* Lock Warning if needed */}
           {!effectiveCanAccessExam && (
-            <div className="mb-6 max-w-md w-full rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-red-700 mb-1">
-                    Akses Ujian Diblokir
-                  </p>
-                  <p className="text-sm text-red-600">
-                    Akun Anda sedang dalam status terkunci. Hubungi proktor
-                    untuk membuka kunci akun Anda agar dapat mengakses ujian.
-                  </p>
-                </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                background: "var(--color-background-danger)",
+                border: "0.5px solid var(--color-border-danger)",
+                borderRadius: 8,
+                padding: "12px 16px",
+                marginBottom: 12,
+                width: "100%",
+                maxWidth: 640,
+              }}
+            >
+              <Lock className="h-[18px] w-[18px] text-red-700 flex-shrink-0" />
+              <div style={{ flex: 1 }}>
+                <p className="font-semibold text-red-700">Akun terkunci</p>
+                <p className="text-sm text-red-700/80">
+                  Terdeteksi indikasi kecurangan. Hubungi pengawas untuk
+                  membuka kunci.
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={handleCheckStatus}
+                disabled={isRefetching}
+                className="rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-60"
+              >
+                {isRefetching ? "Memeriksa..." : "Periksa Status"}
+              </button>
             </div>
           )}
 

@@ -79,6 +79,13 @@ export default function LoginPage() {
               <Alert variant="destructive">
                 <AlertDescription>
                   {loginMutation.error?.message || 'Login gagal. Silakan coba lagi.'}
+                  {loginMutation.error?.message?.toLowerCase().includes('terkunci') && (
+                    <p className="mt-2 text-sm">
+                      Akun Anda terkunci — silakan hubungi pengawas secara
+                      langsung untuk membuka kunci. Jangan mencoba login
+                      ulang.
+                    </p>
+                  )}
                 </AlertDescription>
               </Alert>
             )}

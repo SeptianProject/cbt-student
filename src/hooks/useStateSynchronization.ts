@@ -37,7 +37,7 @@ export function useStateSynchronization() {
 
             if (authState.force_exit) {
               dispatch(setForceExit());
-              router.push("/exam/locked");
+              router.push("/dashboard");
             }
           }
         } catch (error) {

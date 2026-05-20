@@ -69,7 +69,7 @@ export const ForcedExitModal: React.FC<ForcedExitModalProps> = ({
 
   const handleGoToDashboard = () => {
     if (onClose) onClose();
-    router.push("/exam/locked");
+    router.push("/dashboard");
   };
 
   return (

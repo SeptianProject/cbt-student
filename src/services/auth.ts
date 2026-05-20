@@ -25,20 +25,29 @@ export const authService = {
       }
       return response.data;
     } catch (error) {
-      // Enhanced error logging untuk debugging
-      console.error("Login failed:", error);
+      // Enhanced error handling untuk memberikan pesan yang jelas ke UI
       if (axios.isAxiosError(error)) {
+        // Locked account should return 403 from backend
+        if (error.response?.status === 403) {
+          throw new Error(
+            "Akun Anda terkunci. Hubungi pengawas untuk membuka kunci.",
+          );
+        }
+
         if (error.code === "ECONNABORTED") {
           throw new Error(
             "Request timeout - Server tidak merespons. Cek koneksi internet atau coba lagi.",
           );
         }
+
         if (!error.response) {
           throw new Error(
             "Network error - Tidak dapat terhubung ke server. Cek CORS atau API URL.",
           );
         }
       }
+
+      // Jika bukan axios error atau tidak tertangani di atas, lempar ulang
       throw error;
     }
   },

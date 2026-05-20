@@ -110,7 +110,7 @@ export const stateSyncService = {
 
       if (shouldLockout) {
         localStorage.setItem("force_exit", "true");
-        window.location.href = "/exam/locked";
+        window.location.href = "/dashboard";
         return;
       }
 

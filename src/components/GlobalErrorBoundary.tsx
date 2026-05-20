@@ -128,7 +128,7 @@ function ErrorDisplay({ error, errorCode, onReset }: ErrorDisplayProps) {
       localStorage.removeItem("api_token");
       router.push("/");
     } else if (errorCode === "FORBIDDEN") {
-      router.push("/exam/locked");
+      router.push("/dashboard");
     } else {
       onReset();
     }
