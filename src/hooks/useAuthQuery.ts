@@ -19,7 +19,13 @@ export const useLoginMutation = () => {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+    mutationFn: async ({
+      email,
+      password,
+    }: {
+      email: string;
+      password: string;
+    }) => {
       try {
         return await authService.login(email, password);
       } catch (error: any) {

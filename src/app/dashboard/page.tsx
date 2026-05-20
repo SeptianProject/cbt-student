@@ -127,22 +127,20 @@ const DashboardPage = () => {
                 marginBottom: 12,
                 width: "100%",
                 maxWidth: 640,
-              }}
-            >
+              }}>
               <Lock className="h-[18px] w-[18px] text-red-700 flex-shrink-0" />
               <div style={{ flex: 1 }}>
                 <p className="font-semibold text-red-700">Akun terkunci</p>
                 <p className="text-sm text-red-700/80">
-                  Terdeteksi indikasi kecurangan. Hubungi pengawas untuk
-                  membuka kunci.
+                  Terdeteksi indikasi kecurangan. Hubungi pengawas untuk membuka
+                  kunci.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleCheckStatus}
                 disabled={isRefetching}
-                className="rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-60"
-              >
+                className="rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-60">
                 {isRefetching ? "Memeriksa..." : "Periksa Status"}
               </button>
             </div>
