@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateAuthState } from "@/store/authSlice";
+import { useAppSelector } from "@/store/hooks";
 import { examService } from "@/services/exam";
 import { ParsedQuestion, StudentAnswer } from "@/types";
 import { ExamSubmitOptions } from "@/types";
@@ -13,11 +12,9 @@ import { ExamSubmitOptions } from "@/types";
  * 1. Jawaban dikirim ke backend
  * 2. State UI dibersihkan
  * 3. Session dihapus dari localStorage
- * 4. Auth state diset ke is_active=false, is_logout=true
- * 5. User diarahkan ke hasil/dashboard
+ * 4. User diarahkan ke hasil/dashboard oleh flow pemanggil
  */
 export function useSubmitExamWithCleanup() {
-  const dispatch = useAppDispatch();
   const { currentExam } = useAppSelector((state) => state.exam);
 
   const submitAndCleanup = useCallback(
@@ -49,22 +46,13 @@ export function useSubmitExamWithCleanup() {
           localStorage.removeItem(`exam_duration_${currentExam.exam_id}`);
         }
 
-        // Update auth state to reflect that exam is completed
-        // This marks the student as logged out from exam perspective
-        dispatch(
-          updateAuthState({
-            is_active: false,
-            is_logout: true,
-          }),
-        );
-
         return submitResponse;
       } catch (error) {
         console.error("Error in submitAndCleanup:", error);
         throw error;
       }
     },
-    [currentExam, dispatch],
+    [currentExam],
   );
 
   return { submitAndCleanup };

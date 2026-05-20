@@ -38,11 +38,16 @@ const DashboardPage = () => {
   const effectiveIsActive = apiUser?.is_active ?? is_active;
   const effectiveIsLogout = apiUser?.is_logout ?? is_logout;
 
+  // Allow access to exam list when:
+  // - Redux/API indicates canAccessExam, OR
+  // - The account is not force-exited and (active & not-logout), OR
+  // - The account is in "completed" state (is_logout === true) but NOT force-exited.
+  // This distinguishes normal exam completion from a force-exit lock.
   const effectiveCanAccessExam =
     canAccessExam ||
-    (force_exit !== true &&
-      effectiveIsActive === true &&
-      effectiveIsLogout === false);
+    (!force_exit &&
+      ((effectiveIsActive === true && effectiveIsLogout === false) ||
+        effectiveIsLogout === true));
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("id-ID", {

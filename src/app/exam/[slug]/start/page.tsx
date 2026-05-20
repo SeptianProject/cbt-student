@@ -11,7 +11,6 @@ import { ExamNavigationFooter } from "@/components/exam/ExamNavigationFooter";
 import { ExamSubmitModal } from "@/components/exam/ExamSubmitModal";
 import { useExamLogic } from "@/hooks/useExamLogic";
 import { useCheatDetection } from "@/hooks/useCheatDetection";
-import { useSyncAuthStateOnExamEnd } from "@/hooks/useSyncAuthStateOnExamEnd";
 import { useAppDispatch } from "@/store/hooks";
 import { resetExamState } from "@/store/examSlice";
 
@@ -27,9 +26,6 @@ export default function ExamStartPage() {
       console.warn("Cheat attempt detected during exam");
     },
   });
-
-  // Sync auth state when exam submission completes
-  useSyncAuthStateOnExamEnd();
 
   const {
     userData,
@@ -69,6 +65,10 @@ export default function ExamStartPage() {
 
   React.useEffect(() => {
     if (isExamEnded) {
+      localStorage.removeItem("force_exit");
+      localStorage.removeItem("force_exit_reason");
+      localStorage.removeItem("user_is_logout");
+      localStorage.removeItem("user_is_active");
       dispatch(resetExamState());
       localStorage.removeItem("session_token");
       localStorage.removeItem("session_id");

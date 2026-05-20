@@ -14,10 +14,9 @@ interface UseProctorReactivateResult {
 
 /**
  * Hook untuk menangani reactivation dari proctor
- * - Refetch state user dari backend
+ * - Mengecek state user terbaru dari backend saat tombol ditekan
  * - Jika is_active=true dan is_logout=false, user bisa lanjut
  * - Jika masih lockout, tetap di lock screen
- * - Polling atau refresh manual bisa dilakukan
  */
 export function useProctorReactivate(): UseProctorReactivateResult {
   const dispatch = useAppDispatch();
@@ -28,6 +27,7 @@ export function useProctorReactivate(): UseProctorReactivateResult {
   const checkReactivationStatus = useCallback(async (): Promise<boolean> => {
     setIsChecking(true);
     setError(null);
+    setIsReactivated(false);
 
     try {
       // Fetch latest auth state from backend without depending on exam_id.
@@ -50,6 +50,7 @@ export function useProctorReactivate(): UseProctorReactivateResult {
         return true;
       } else {
         setIsReactivated(false);
+        setError("Akun belum diaktifkan, hubungi pengawas");
         return false;
       }
     } catch (err) {

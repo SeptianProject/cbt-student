@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useProctorReactivate } from "@/hooks/useProctorReactivate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Lock, AlertCircle, Clock, CheckCircle } from "lucide-react";
+import { Lock, AlertCircle, Clock } from "lucide-react";
 
 export default function ExamLockedPage() {
   const router = useRouter();
@@ -16,12 +16,10 @@ export default function ExamLockedPage() {
     (state) => state.auth,
   );
   const [mounted, setMounted] = useState(false);
-  const [autoCheckEnabled, setAutoCheckEnabled] = useState(true);
   const [forceExitReason, setForceExitReason] = useState<string | null>(null);
   const {
     isChecking,
     error: reactivateError,
-    isReactivated,
     checkReactivationStatus,
   } = useProctorReactivate();
 
@@ -41,24 +39,6 @@ export default function ExamLockedPage() {
       router.push("/exam");
     }
   }, [mounted, is_active, is_logout, user, router, dispatch]);
-
-  // If reactivated, redirect to exam
-  useEffect(() => {
-    if (isReactivated) {
-      router.push("/exam");
-    }
-  }, [isReactivated, router]);
-
-  // Auto-check reactivation status every 5 seconds if enabled
-  useEffect(() => {
-    if (!mounted || !autoCheckEnabled) return;
-
-    const interval = setInterval(async () => {
-      await checkReactivationStatus();
-    }, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [mounted, autoCheckEnabled, checkReactivationStatus]);
 
   const handleCheckReactivation = useCallback(async () => {
     const reactivated = await checkReactivationStatus();
@@ -82,7 +62,6 @@ export default function ExamLockedPage() {
     return null;
   }
 
-  const isLocked = force_exit || (is_active && is_logout);
   const reasonLabel = forceExitReason ? `(${forceExitReason})` : "";
 
   return (
@@ -157,8 +136,6 @@ export default function ExamLockedPage() {
                   • Terdeteksi penggunaan aplikasi eksternal (copy-paste,
                   screenshot)
                 </li>
-                <li>• Perintah force exit dari proktor</li>
-                <li>• Masalah teknis atau kehilangan koneksi selama ujian</li>
               </ul>
             </div>
 
@@ -168,15 +145,9 @@ export default function ExamLockedPage() {
                 Apa yang Harus Dilakukan:
               </h3>
               <ol className="text-sm text-gray-700 space-y-1 ml-7">
-                <li>1. Hubungi proktor atau pengawas ujian</li>
+                <li>1. Hubungi pengawas ujian</li>
                 <li>2. Jelaskan apa yang terjadi dengan detail</li>
-                <li>3. Tunggu proktor untuk membuka kunci akun</li>
-                <li>
-                  4. Sistem akan otomatis memeriksa status akun setiap 5 detik
-                </li>
-                <li>
-                  5. Jika akun sudah dibuka, halaman akan otomatis ter-refresh
-                </li>
+                <li>3. Tunggu pengawas untuk membuka kunci akun</li>
               </ol>
             </div>
 
@@ -195,7 +166,7 @@ export default function ExamLockedPage() {
 
           {/* Status Checker */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 {isChecking ? (
                   <>
@@ -204,28 +175,20 @@ export default function ExamLockedPage() {
                       Memeriksa status...
                     </span>
                   </>
-                ) : isReactivated ? (
-                  <>
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-medium text-green-700">
-                      Akun telah diaktifkan!
-                    </span>
-                  </>
                 ) : (
                   <>
                     <Clock className="h-5 w-5 text-blue-600" />
                     <span className="text-sm font-medium text-blue-700">
-                      Auto-check: Aktif (5 detik)
+                      Klik tombol untuk memeriksa status akun
                     </span>
                   </>
                 )}
               </div>
               <Button
-                onClick={() => setAutoCheckEnabled(!autoCheckEnabled)}
-                variant="outline"
-                size="sm"
-                className="text-xs">
-                {autoCheckEnabled ? "Pause" : "Resume"}
+                onClick={handleCheckReactivation}
+                disabled={isChecking}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium">
+                {isChecking ? "Memeriksa..." : "Periksa Status"}
               </Button>
             </div>
           </div>
@@ -241,27 +204,13 @@ export default function ExamLockedPage() {
           )}
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex justify-center">
             <Button
-              onClick={handleCheckReactivation}
-              disabled={isChecking || isReactivated}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition">
-              {isChecking ? "Memeriksa..." : "Periksa Sekarang"}
-            </Button>
-
-            <Button variant="outline" onClick={handleGoHome} className="w-full">
+              variant="outline"
+              onClick={handleGoHome}
+              className="w-full sm:w-auto">
               Kembali ke Beranda
             </Button>
-          </div>
-
-          {/* Footer Note */}
-          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-center text-sm text-amber-800">
-            <p className="font-medium mb-1">💡 Tips:</p>
-            <p>
-              Halaman ini akan otomatis memeriksa status setiap 5 detik. Jika
-              proktor telah membuka kunci akun Anda, halaman akan otomatis
-              berpindah ke ujian.
-            </p>
           </div>
         </div>
       </Card>

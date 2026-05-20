@@ -33,6 +33,7 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   const dispatch = useAppDispatch();
   const { is_active, is_logout } = useAppSelector((state) => state.auth);
   const sessionStatus = useAppSelector((state) => state.exam.sessionStatus);
+  const isSubmitting = useAppSelector((state) => state.exam.isSubmitting);
   const examId = useAppSelector((state) => state.exam.currentExam?.exam_id);
   const cheatReportedRef = useRef(false);
   const mountedAtRef = useRef<number>(Date.now());
@@ -44,14 +45,20 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   );
 
   useEffect(() => {
+    const submitInProgressFlag =
+      typeof window !== "undefined" &&
+      localStorage.getItem("exam_submit_in_progress") === "true";
+
     console.log("[CHEAT GUARD CHECK]", {
       enabled,
       sessionStatus,
       is_active,
       is_logout,
+      isSubmitting,
+      submitInProgressFlag,
       examId,
     });
-  }, [enabled, sessionStatus, is_active, is_logout, examId]);
+  }, [enabled, sessionStatus, is_active, is_logout, isSubmitting, examId]);
 
   const handleRedirectToLocked = useCallback(() => {
     // Clear exam session data
@@ -152,7 +159,18 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   );
 
   useEffect(() => {
-    if (!enabled || sessionStatus !== "progress" || !is_active || is_logout) {
+    const submitInProgressFlag =
+      typeof window !== "undefined" &&
+      localStorage.getItem("exam_submit_in_progress") === "true";
+
+    if (
+      !enabled ||
+      sessionStatus !== "progress" ||
+      !is_active ||
+      is_logout ||
+      isSubmitting ||
+      submitInProgressFlag
+    ) {
       return;
     }
 
@@ -209,7 +227,11 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (debugMode) console.log("Before unload triggered");
 
-      if (!isMonitoringReady()) return;
+      const submitInProgress =
+        typeof window !== "undefined" &&
+        localStorage.getItem("exam_submit_in_progress") === "true";
+
+      if (!isMonitoringReady() || submitInProgress) return;
 
       if (!cheatReportedRef.current) {
         cheatReportedRef.current = true;
@@ -256,6 +278,7 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
     is_active,
     is_logout,
     sessionStatus,
+    isSubmitting,
     examId,
     dispatch,
     onCheatDetected,

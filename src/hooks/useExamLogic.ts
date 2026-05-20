@@ -209,6 +209,35 @@ export const useExamLogic = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isExamEnded]);
 
+  // Submit guard - mark submission in progress to prevent cheat detection race
+  const withSubmitGuard = useCallback(
+    async (submitAction: () => Promise<unknown>) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("exam_submit_in_progress", "true");
+      }
+
+      try {
+        return await submitAction();
+      } finally {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("exam_submit_in_progress");
+        }
+      }
+    },
+    [],
+  );
+
+  const cleanupSubmitAuthFlags = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    localStorage.removeItem("force_exit");
+    localStorage.removeItem("force_exit_reason");
+    localStorage.removeItem("user_is_logout");
+    localStorage.removeItem("user_is_active");
+  }, []);
+
   // Answer and flag handlers
   const handleAnswerChange = useCallback(
     (questionId: number, answer: string | string[]) => {
@@ -245,7 +274,7 @@ export const useExamLogic = () => {
   }, [currentQuestionIndex, questions.length]);
 
   // Submit handlers
-  const handleSubmitExam = useCallback(() => {
+  const handleSubmitExam = useCallback(async () => {
     // Check if submit is allowed (all questions must be answered)
     if (!isSubmitAllowed) {
       return; // Don't allow submit if not all questions are answered
@@ -256,32 +285,65 @@ export const useExamLogic = () => {
       dispatch(setShowSubmitModal(true));
     } else {
       if (currentExam?.exam_id) {
-        dispatch(
-          submitExam({
-            examId: currentExam.exam_id,
-            answers,
-            questions,
-            finalSubmit: true,
-          }),
-        );
+        await withSubmitGuard(async () => {
+          try {
+            await dispatch(
+              submitExam({
+                examId: currentExam.exam_id,
+                answers,
+                questions,
+                finalSubmit: true,
+              }),
+            ).unwrap();
+            cleanupSubmitAuthFlags();
+          } catch (err) {
+            // submission failed - do not clear cheat-related localStorage flags
+            console.error("Submit failed:", err);
+            throw err;
+          }
+        });
       }
     }
-  }, [answers, questions, dispatch, currentExam, isSubmitAllowed]);
+  }, [
+    answers,
+    questions,
+    dispatch,
+    currentExam,
+    isSubmitAllowed,
+    withSubmitGuard,
+    cleanupSubmitAuthFlags,
+  ]);
 
-  const handleTimeUp = useCallback(() => {
+  const handleTimeUp = useCallback(async () => {
     if (!isExamEnded && currentExam?.exam_id) {
       // Force submit when time is up
-      dispatch(
-        submitExam({
-          examId: currentExam.exam_id,
-          answers,
-          questions,
-          forceSubmit: true,
-          finalSubmit: true,
-        }),
-      );
+      await withSubmitGuard(async () => {
+        try {
+          await dispatch(
+            submitExam({
+              examId: currentExam.exam_id,
+              answers,
+              questions,
+              forceSubmit: true,
+              finalSubmit: true,
+            }),
+          ).unwrap();
+          cleanupSubmitAuthFlags();
+        } catch (err) {
+          console.error("Auto-submit failed:", err);
+          throw err;
+        }
+      });
     }
-  }, [isExamEnded, currentExam, answers, questions, dispatch]);
+  }, [
+    isExamEnded,
+    currentExam,
+    answers,
+    questions,
+    dispatch,
+    withSubmitGuard,
+    cleanupSubmitAuthFlags,
+  ]);
 
   // Handler untuk update waktu tersisa
   const handleTimeUpdate = useCallback(
@@ -291,20 +353,35 @@ export const useExamLogic = () => {
     [dispatch],
   );
 
-  const confirmSubmission = useCallback(() => {
+  const confirmSubmission = useCallback(async () => {
     // ✅ Don't close modal here - let it stay open during submission
     // Modal will auto-close when submission completes or user is redirected
     if (currentExam?.exam_id) {
-      dispatch(
-        submitExam({
-          examId: currentExam.exam_id,
-          answers,
-          questions,
-          finalSubmit: true,
-        }),
-      );
+      await withSubmitGuard(async () => {
+        try {
+          await dispatch(
+            submitExam({
+              examId: currentExam.exam_id,
+              answers,
+              questions,
+              finalSubmit: true,
+            }),
+          ).unwrap();
+          cleanupSubmitAuthFlags();
+        } catch (err) {
+          console.error("Confirm submit failed:", err);
+          throw err;
+        }
+      });
     }
-  }, [dispatch, currentExam, answers, questions]);
+  }, [
+    dispatch,
+    currentExam,
+    answers,
+    questions,
+    withSubmitGuard,
+    cleanupSubmitAuthFlags,
+  ]);
 
   // Retry handlers
   const retryFetchExam = useCallback(() => {

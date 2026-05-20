@@ -289,6 +289,8 @@ export const examService = {
       payload.essay_answers = essayAnswers;
     }
 
+    console.log("[SUBMIT PAYLOAD]", payload);
+
     try {
       const response = await api.post(
         `/siswa/exams/${examId}/submit`,
