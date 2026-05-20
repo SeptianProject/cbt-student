@@ -4,8 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ReactNode, useState, useEffect } from "react";
 import { InactivityTimeoutProvider } from "@/components/InactivityTimeoutProvider";
-import HeartbeatProvider from "@/components/HeartbeatProvider";
-import StateSyncProvider from "@/components/StateSyncProvider";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -43,16 +41,12 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <HeartbeatProvider>
-        <StateSyncProvider>
-          <InactivityTimeoutProvider
-            timeout={1 * 60 * 1000} // 1 menit untuk testing
-            excludeRoutes={["/exam"]} // Exclude halaman exam
-          >
-            {children}
-          </InactivityTimeoutProvider>
-        </StateSyncProvider>
-      </HeartbeatProvider>
+      <InactivityTimeoutProvider
+        timeout={1 * 60 * 1000} // 1 menit untuk testing
+        excludeRoutes={["/exam"]} // Exclude halaman exam
+      >
+        {children}
+      </InactivityTimeoutProvider>
       {process.env.NODE_ENV === "development" && (
         <ReactQueryDevtools initialIsOpen={false} />
       )}

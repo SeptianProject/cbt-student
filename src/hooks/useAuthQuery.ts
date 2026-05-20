@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth";
-import axios from "axios";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import axios, { AxiosError } from "axios";
+import { useAppDispatch } from "@/store/hooks";
 import { setToken, clearAuth, updateAuthState } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 
@@ -28,7 +28,7 @@ export const useLoginMutation = () => {
     }) => {
       try {
         return await authService.login(email, password);
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (axios.isAxiosError(error) && error.response?.status === 403) {
           throw new Error(
             "Akun Anda terkunci. Hubungi pengawas untuk membuka kunci.",
@@ -103,7 +103,8 @@ export const useLogoutMutation = () => {
 // Hook untuk get current user (Dashboard data)
 export const useCurrentUser = (enabled: boolean = true) => {
   const dispatch = useAppDispatch();
-  const query = useQuery({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const query = useQuery<any, Error>({
     queryKey: authKeys.currentUser(),
     queryFn: () => authService.getCurrentUser(),
     enabled, // Only fetch when enabled (e.g., when user is authenticated)
@@ -111,8 +112,9 @@ export const useCurrentUser = (enabled: boolean = true) => {
     refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: false,
     // Conditional retry: don't retry on 403 (locked account), retry other errors up to 3 times
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 403) {
+    retry: (failureCount, error: unknown) => {
+      const axiosError = error as AxiosError;
+      if (axiosError?.response?.status === 403) {
         return false; // Don't retry on 403 (locked account)
       }
       return failureCount < 3; // Retry up to 3 times for other errors

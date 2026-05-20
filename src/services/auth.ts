@@ -6,7 +6,6 @@ import {
   ExamSubmitRequest,
   ExamSubmitResponse,
   ExamStatusResponse,
-  HeartbeatResponse,
 } from "@/types";
 import axios from "axios";
 
@@ -88,11 +87,6 @@ export const authService = {
   },
 
   // Exam-related endpoints
-  heartbeat: async (): Promise<HeartbeatResponse> => {
-    const response = await api.post<HeartbeatResponse>("/siswa/heartbeat");
-    return response.data;
-  },
-
   examStart: async (examId: number): Promise<ExamStartResponse> => {
     const response = await api.post<ExamStartResponse>(
       `/siswa/exams/${examId}/start`,

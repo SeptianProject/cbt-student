@@ -19,7 +19,7 @@ export default function ProtectedRoute({
   const sessionStatus = useAppSelector((state) => state.exam.sessionStatus);
   const shouldEnforceExamLock =
     requireExamAccess && sessionStatus === "progress";
-  const { isForceExited, forceExitReason } = useForceExitDetection({
+  const { isForceExited } = useForceExitDetection({
     enabled: shouldEnforceExamLock,
   });
   const router = useRouter();

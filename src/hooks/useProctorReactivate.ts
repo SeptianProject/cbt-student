@@ -30,20 +30,21 @@ export function useProctorReactivate(): UseProctorReactivateResult {
     setIsReactivated(false);
 
     try {
-      // Fetch latest auth state from backend without depending on exam_id.
-      // Using heartbeat avoids accidental /status requests with invalid exam IDs.
-      const response = await authService.heartbeat();
+      // Fetch latest user data from backend to get current auth state
+      const dashboardData = await authService.getCurrentUser();
+      const userIsActive = dashboardData.student?.user?.is_active ?? false;
+      const userIsLogout = dashboardData.student?.user?.is_logout ?? false;
 
       // Update Redux auth state with latest values
       dispatch(
         updateAuthState({
-          is_active: response.is_active,
-          is_logout: response.is_logout,
+          is_active: userIsActive,
+          is_logout: userIsLogout,
         }),
       );
 
       // Check if user has been reactivated
-      if (response.is_active && !response.is_logout) {
+      if (userIsActive && !userIsLogout) {
         setIsReactivated(true);
         // Clear force exit flag if it was set
         dispatch(clearForceExit());

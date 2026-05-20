@@ -170,7 +170,7 @@ export const useUpdateAnswerMutation = () => {
       answer: string | string[];
       type: "choice" | "essay";
     }) => examService.updateAnswer(sessionId, questionId, answer, type),
-    onSuccess: (data) => {},
+    onSuccess: () => {},
     onError: (error: Error) => {
       console.error("Failed to update answer:", error.message);
     },
@@ -197,7 +197,7 @@ export const useAutoSaveAnswersMutation = () => {
       answers: Record<number, StudentAnswer>;
       questions: ParsedQuestion[];
     }) => examService.autoSaveAnswers(examId, answers, questions),
-    onSuccess: (data) => {},
+    onSuccess: () => {},
     onError: (error: Error) => {
       console.error("Auto-save failed:", error.message);
     },

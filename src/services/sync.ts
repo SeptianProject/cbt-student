@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { ExamStatusResponse, HeartbeatResponse } from "@/types";
+import { ExamStatusResponse } from "@/types";
 
 /**
  * Service untuk memastikan state frontend selalu sinkron dengan backend
@@ -28,7 +28,7 @@ export const stateSyncService = {
       });
 
       return response.status === 200;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
@@ -50,7 +50,7 @@ export const stateSyncService = {
       });
 
       return response.status === 200;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
@@ -65,64 +65,9 @@ export const stateSyncService = {
         `/siswa/exams/${examId}/status`,
       );
       return response.data;
-    } catch (error) {
-      console.error("Error syncing exam state:", error);
+    } catch {
+      console.error("Error syncing exam state");
       return null;
-    }
-  },
-
-  /**
-   * Check user's current auth state from backend
-   * Returns latest is_active and is_logout flags
-   */
-  syncAuthState: async (): Promise<HeartbeatResponse | null> => {
-    try {
-      const response = await api.post<HeartbeatResponse>("/siswa/heartbeat");
-      return response.data;
-    } catch (error) {
-      console.error("Error syncing auth state:", error);
-      return null;
-    }
-  },
-
-  /**
-   * Handle state mismatch between frontend and backend
-   * Called when frontend detects state that doesn't match backend
-   */
-  handleStateMismatch: async (): Promise<void> => {
-    if (typeof window === "undefined") return;
-
-    try {
-      // Attempt to sync auth state first
-      const authState = await stateSyncService.syncAuthState();
-
-      if (!authState) {
-        // If can't reach backend, redirect to home
-        window.location.href = "/";
-        return;
-      }
-
-      // If forced to lockout, redirect
-      const shouldLockout =
-        authState.force_exit === true ||
-        (!authState.is_active && !authState.is_logout) ||
-        (authState.is_active && authState.is_logout);
-
-      if (shouldLockout) {
-        localStorage.setItem("force_exit", "true");
-        window.location.href = "/dashboard";
-        return;
-      }
-
-      // If logged out, redirect to home
-      if (authState.is_logout === true) {
-        localStorage.removeItem("api_token");
-        window.location.href = "/";
-        return;
-      }
-    } catch (error) {
-      console.error("Error handling state mismatch:", error);
-      window.location.href = "/";
     }
   },
 

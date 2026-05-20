@@ -48,14 +48,6 @@ export interface ExamStatusResponse {
   is_logout: boolean;
 }
 
-export interface HeartbeatResponse {
-  success: boolean;
-  is_active: boolean;
-  is_logout: boolean;
-  force_exit?: boolean;
-  message?: string;
-}
-
 export interface School {
   id: number;
   name: string;

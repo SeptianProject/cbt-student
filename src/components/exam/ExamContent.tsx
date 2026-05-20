@@ -1,168 +1,126 @@
-import { Student, AssignedExam } from '@/types';
-import React from 'react'
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useRouter } from 'next/navigation';
-import { BookOpen, Clock, FileText, Play, Pause, CheckCircle, Home } from 'lucide-react';
+import { Student, AssignedExam } from "@/types";
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { Clock, FileText, Home } from "lucide-react";
 
 interface ExamContentProps {
-     userData?: {
-          student: Student;
-          assigned: AssignedExam[];
-     },
+  userData?: {
+    student: Student;
+    assigned: AssignedExam[];
+  };
 }
 
 interface ExamStatus {
-     exam_id: number;
-     status: 'not_started' | 'in_progress' | 'completed';
-     last_accessed?: string;
+  exam_id: number;
+  status: "not_started" | "in_progress" | "completed";
+  last_accessed?: string;
 }
 
 const ExamContent: React.FC<ExamContentProps> = ({ userData }) => {
-     const router = useRouter();
-     const examId = localStorage.getItem('exam_id')
+  const router = useRouter();
+  const examId = localStorage.getItem("exam_id");
 
-     const currentExam = React.useMemo(() => {
-          if (!examId || !userData?.assigned) return null;
-          return userData.assigned.find(exam => exam.exam_id.toString() === examId);
-     }, [examId, userData?.assigned]);
+  const currentExam = React.useMemo(() => {
+    if (!examId || !userData?.assigned) return null;
+    return userData.assigned.find((exam) => exam.exam_id.toString() === examId);
+  }, [examId, userData?.assigned]);
 
-     // Get exam statuses
-     const getExamStatuses = (): ExamStatus[] => {
-          const saved = localStorage.getItem('exam_statuses');
-          if (saved) {
-               try {
-                    return JSON.parse(saved);
-               } catch {
-                    return [];
-               }
-          }
-          return [];
-     };
+  // Get exam statuses
+  const getExamStatuses = (): ExamStatus[] => {
+    const saved = localStorage.getItem("exam_statuses");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
 
-     const getExamStatus = (examId: number): ExamStatus['status'] => {
-          const statuses = getExamStatuses();
-          const status = statuses.find(s => s.exam_id === examId);
-          return status?.status || 'not_started';
-     };
+  const getExamStatus = (examId: number): ExamStatus["status"] => {
+    const statuses = getExamStatuses();
+    const status = statuses.find((s) => s.exam_id === examId);
+    return status?.status || "not_started";
+  };
 
-     const getStatusIcon = (status: ExamStatus['status']) => {
-          switch (status) {
-               case 'not_started':
-                    return <Play className="h-5 w-5 text-primary" />;
-               case 'in_progress':
-                    return <Pause className="h-5 w-5 text-orange-600" />;
-               case 'completed':
-                    return <CheckCircle className="h-5 w-5 text-blue-500" />;
-               default:
-                    return <Play className="h-5 w-5 text-gray-400" />;
-          }
-     };
+  const handleBackToDashboard = () => {
+    router.push("/dashboard");
+  };
 
-     const getStatusText = (status: ExamStatus['status']) => {
-          switch (status) {
-               case 'not_started':
-                    return 'Belum Dimulai';
-               case 'in_progress':
-                    return 'Sedang Berlangsung';
-               case 'completed':
-                    return 'Selesai';
-               default:
-                    return 'Belum Dimulai';
-          }
-     };
+  React.useEffect(() => {}, [examId, userData, currentExam]);
 
-     const getStatusColor = (status: ExamStatus['status']) => {
-          switch (status) {
-               case 'not_started':
-                    return 'text-primary bg-primary/10 border-primary/20';
-               case 'in_progress':
-                    return 'text-orange-600 bg-orange-50 border-orange-200';
-               case 'completed':
-                    return 'text-green-500 bg-blue-50 border-blue-200';
-               default:
-                    return 'text-gray-600 bg-gray-50 border-gray-200';
-          }
-     };
+  if (!examId && userData?.assigned && userData.assigned.length > 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-8 flex-1">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Memuat Ujian...</h2>
+          <p className="text-gray-600">Sedang memilih ujian otomatis...</p>
+        </div>
+      </div>
+    );
+  }
 
-     const handleBackToDashboard = () => {
-          router.push('/dashboard');
-     };
-
-     React.useEffect(() => {
-     }, [examId, userData, currentExam])
-
-     if (!examId && userData?.assigned && userData.assigned.length > 0) {
-          return (
-               <div className="flex flex-col items-center justify-center gap-8 flex-1">
-                    <div className="text-center">
-                         <h2 className="text-2xl font-bold mb-4">Memuat Ujian...</h2>
-                         <p className="text-gray-600">Sedang memilih ujian otomatis...</p>
-                    </div>
-               </div>
-          );
-     }
-
-     return (
-          <div className="flex flex-col items-center justify-center gap-8 flex-1">
-               {examId && currentExam ? (
-                    <>
-                         <div className="text-center">
-                              {/* <div className="flex items-center justify-center gap-2 mb-4">
+  return (
+    <div className="flex flex-col items-center justify-center gap-8 flex-1">
+      {examId && currentExam ? (
+        <>
+          <div className="text-center">
+            {/* <div className="flex items-center justify-center gap-2 mb-4">
                                    {getStatusIcon(getExamStatus(currentExam.exam_id))}
                                    <span className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(getExamStatus(currentExam.exam_id))}`}>
                                         {getStatusText(getExamStatus(currentExam.exam_id))}
                                    </span>
-                              </div> */} 
+                              </div> */}
 
-                              <h2 className="text-3xl font-bold mb-6">
-                                   {currentExam.title}
-                              </h2>
-                              <div className="flex justify-center gap-8 mb-8">
-                                   <div className="text-center">
-                                        <div className="flex items-center justify-center gap-2 mb-2">
-                                             <Clock className="h-6 w-6 text-primary" />
-                                             <p className="text-3xl font-bold text-primary">
-                                                  {currentExam.duration}
-                                             </p>
-                                        </div>
-                                        <p className="text-sm text-gray-600">Menit</p>
-                                   </div>
-                                   <div className="text-center">
-                                        <div className="flex items-center justify-center gap-2 mb-2">
-                                             <FileText className="h-6 w-6 text-blue-500" />
-                                             <p className="text-3xl font-bold text-blue-500">
-                                                  {currentExam.total_quest}
-                                             </p>
-                                        </div>
-                                        <p className="text-sm text-gray-600">Soal</p>
-                                   </div>
-                              </div>
-                         </div>
+            <h2 className="text-3xl font-bold mb-6">{currentExam.title}</h2>
+            <div className="flex justify-center gap-8 mb-8">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Clock className="h-6 w-6 text-primary" />
+                  <p className="text-3xl font-bold text-primary">
+                    {currentExam.duration}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-600">Menit</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <FileText className="h-6 w-6 text-blue-500" />
+                  <p className="text-3xl font-bold text-blue-500">
+                    {currentExam.total_quest}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-600">Soal</p>
+              </div>
+            </div>
+          </div>
 
-                         <div className="text-center max-w-md">
-                              <p className="text-gray-600 mb-6">
-                                   {getExamStatus(currentExam.exam_id) === 'completed'
-                                        ? 'Ujian ini telah selesai dikerjakan. Anda dapat meninjau ulang atau melanjutkan ke ujian berikutnya.'
-                                        : 'Pastikan koneksi internet Anda stabil sebelum memulai ujian. Setelah ujian dimulai, timer akan berjalan otomatis.'
-                                   }
-                              </p>
+          <div className="text-center max-w-md">
+            <p className="text-gray-600 mb-6">
+              {getExamStatus(currentExam.exam_id) === "completed"
+                ? "Ujian ini telah selesai dikerjakan. Anda dapat meninjau ulang atau melanjutkan ke ujian berikutnya."
+                : "Pastikan koneksi internet Anda stabil sebelum memulai ujian. Setelah ujian dimulai, timer akan berjalan otomatis."}
+            </p>
 
-                              {/* Information */}
-                              <div className="bg-blue-50 rounded-lg p-6 mb-6">
-                                   <p className="text-sm text-blue-800 mb-2">
-                                        <strong>Petunjuk:</strong>
-                                   </p>
-                                   <ul className="text-sm text-blue-700 space-y-1 text-left">
-                                        <li>• Pastikan koneksi internet stabil sebelum memulai ujian</li>
-                                        <li>• Setelah ujian dimulai, timer akan berjalan otomatis</li>
-                                        <li>• Ujian akan otomatis berakhir ketika waktu habis</li>
-                                        <li>• Pastikan Anda telah siap sebelum memulai ujian</li>
-                                   </ul>
-                              </div>
+            {/* Information */}
+            <div className="bg-blue-50 rounded-lg p-6 mb-6">
+              <p className="text-sm text-blue-800 mb-2">
+                <strong>Petunjuk:</strong>
+              </p>
+              <ul className="text-sm text-blue-700 space-y-1 text-left">
+                <li>
+                  • Pastikan koneksi internet stabil sebelum memulai ujian
+                </li>
+                <li>• Setelah ujian dimulai, timer akan berjalan otomatis</li>
+                <li>• Ujian akan otomatis berakhir ketika waktu habis</li>
+                <li>• Pastikan Anda telah siap sebelum memulai ujian</li>
+              </ul>
+            </div>
 
-                              {/* Navigation Button */}
-                              {/* <Button
+            {/* Navigation Button */}
+            {/* <Button
                                    variant="outline"
                                    onClick={handleBackToDashboard}
                                    className="mb-4 flex items-center gap-2"
@@ -170,10 +128,10 @@ const ExamContent: React.FC<ExamContentProps> = ({ userData }) => {
                                    <Home className="w-4 h-4" />
                                    Kembali ke Dashboard
                               </Button> */}
-                         </div>
+          </div>
 
-                         {/* All Exams Progress */}
-                         {/* {userData?.assigned && userData.assigned.length > 1 && (
+          {/* All Exams Progress */}
+          {/* {userData?.assigned && userData.assigned.length > 1 && (
                               <div className="w-full max-w-4xl">
                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
                                         Progress Semua Ujian
@@ -224,29 +182,27 @@ const ExamContent: React.FC<ExamContentProps> = ({ userData }) => {
                                    </div>
                               </div>
                          )} */}
-                    </>
-               ) : (
-                    <div className="text-center">
-                         <h2 className="text-2xl font-bold mb-4">
-                              {examId ? 'Ujian Tidak Ditemukan' : 'Selamat Datang!'}
-                         </h2>
-                         <p className="text-gray-600 mb-6">
-                              {examId ?
-                                   'Ujian yang Anda pilih tidak ditemukan atau sudah tidak tersedia.' :
-                                   'Saat ini tidak ada ujian yang ditugaskan untuk Anda.'
-                              }
-                         </p>
-                         <Button
-                              onClick={handleBackToDashboard}
-                              className="flex items-center gap-2"
-                         >
-                              <Home className="w-4 h-4" />
-                              Kembali ke Dashboard
-                         </Button>
-                    </div>
-               )}
-          </div>
-     )
-}
+        </>
+      ) : (
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">
+            {examId ? "Ujian Tidak Ditemukan" : "Selamat Datang!"}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {examId
+              ? "Ujian yang Anda pilih tidak ditemukan atau sudah tidak tersedia."
+              : "Saat ini tidak ada ujian yang ditugaskan untuk Anda."}
+          </p>
+          <Button
+            onClick={handleBackToDashboard}
+            className="flex items-center gap-2">
+            <Home className="w-4 h-4" />
+            Kembali ke Dashboard
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
 
-export default ExamContent
+export default ExamContent;

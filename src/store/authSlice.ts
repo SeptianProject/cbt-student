@@ -5,12 +5,7 @@ import {
   Draft,
 } from "@reduxjs/toolkit";
 import { authService } from "@/services/auth";
-import {
-  User,
-  DashboardExam,
-  ExamStatusResponse,
-  HeartbeatResponse,
-} from "@/types";
+import { User, DashboardExam, ExamStatusResponse } from "@/types";
 
 interface AuthState {
   user: User | null;
@@ -76,18 +71,6 @@ export const getCurrentUser = createAsyncThunk(
   "auth/getCurrentUser",
   async () => {
     return await authService.getCurrentUser();
-  },
-);
-
-export const checkHeartbeat = createAsyncThunk(
-  "auth/heartbeat",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await authService.heartbeat();
-      return response;
-    } catch (error) {
-      return rejectWithValue(error);
-    }
   },
 );
 
@@ -230,19 +213,6 @@ const authSlice = createSlice({
           state.errorMessage =
             action.error?.message || "Failed to get user data";
           state.isAuthenticated = false;
-        },
-      )
-      // Heartbeat
-      .addCase(
-        checkHeartbeat.fulfilled,
-        (state: Draft<AuthState>, action: PayloadAction<HeartbeatResponse>) => {
-          state.is_active = action.payload.is_active;
-          state.is_logout = action.payload.is_logout;
-          // Force exit detection: if backend returns force_exit flag, set it
-          // (state should already have correct is_active/is_logout from response)
-          if (action.payload.force_exit) {
-            state.force_exit = true;
-          }
         },
       )
       // Exam Status

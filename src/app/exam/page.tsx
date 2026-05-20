@@ -4,17 +4,16 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { createExamSlug } from "@/lib/examUtils";
-import { useAuthStateProtection } from "@/hooks/useAuthStateProtection";
 import { useCurrentUser } from "@/hooks/useAuthQuery";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateAuthState } from "@/store/authSlice";
 import React, { useEffect } from "react";
 import { AlertCircle } from "lucide-react";
+import { AssignedExam } from "@/types";
 
 const ExamPage = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { canAccessExam: reduxCanAccessExam } = useAuthStateProtection();
 
   const { data: userData, isError, isLoading } = useCurrentUser(true);
   const [authSynced, setAuthSynced] = React.useState(false);
@@ -78,7 +77,7 @@ const ExamPage = () => {
 
     // Filter out expired exams first
     const validExams = userData.assigned.filter(
-      (exam) => exam.status !== "expired",
+      (exam: AssignedExam) => exam.status !== "expired",
     );
 
     if (validExams.length === 0) {
