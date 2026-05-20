@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useForceExitDetection } from "@/hooks/useForceExitDetection";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { useAppSelector } from "@/store/hooks";
 
@@ -23,6 +23,7 @@ export default function ProtectedRoute({
     enabled: shouldEnforceExamLock,
   });
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const hasRedirectedRef = useRef(false);
 
@@ -39,12 +40,24 @@ export default function ProtectedRoute({
   // Enforce state protection if this is an exam page
   useEffect(() => {
     if (mounted && isAuthenticated && shouldEnforceExamLock) {
-      if (isForceExited && !hasRedirectedRef.current) {
+      // Only redirect to dashboard if not already there and not previously redirected
+      if (
+        isForceExited &&
+        !hasRedirectedRef.current &&
+        pathname !== "/dashboard"
+      ) {
         hasRedirectedRef.current = true;
         router.push("/dashboard");
       }
     }
-  }, [mounted, isAuthenticated, isForceExited, shouldEnforceExamLock, router]);
+  }, [
+    mounted,
+    isAuthenticated,
+    isForceExited,
+    shouldEnforceExamLock,
+    router,
+    pathname,
+  ]);
 
   if (!mounted) {
     return null;

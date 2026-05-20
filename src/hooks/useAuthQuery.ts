@@ -110,8 +110,13 @@ export const useCurrentUser = (enabled: boolean = true) => {
     staleTime: 0, // Always fetch fresh data to ensure latest assigned exams
     refetchOnMount: "always", // Always refetch when component mounts
     refetchOnWindowFocus: false,
-    // Disable automatic retries to avoid retry loops on 4xx errors (403 locked account)
-    retry: false,
+    // Conditional retry: don't retry on 403 (locked account), retry other errors up to 3 times
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 403) {
+        return false; // Don't retry on 403 (locked account)
+      }
+      return failureCount < 3; // Retry up to 3 times for other errors
+    },
   });
 
   useEffect(() => {

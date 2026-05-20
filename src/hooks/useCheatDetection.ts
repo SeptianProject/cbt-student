@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { setForceExit, updateAuthState } from "@/store/authSlice";
 import { authService } from "@/services/auth";
@@ -30,8 +30,10 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   const { enabled = true, onCheatDetected, debugMode = false } = options;
 
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useAppDispatch();
   const { is_active, is_logout } = useAppSelector((state) => state.auth);
+  const forceExit = useAppSelector((state) => state.auth.force_exit);
   const sessionStatus = useAppSelector((state) => state.exam.sessionStatus);
   const isSubmitting = useAppSelector((state) => state.exam.isSubmitting);
   const examId = useAppSelector((state) => state.exam.currentExam?.exam_id);
@@ -61,6 +63,15 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
   }, [enabled, sessionStatus, is_active, is_logout, isSubmitting, examId]);
 
   const handleRedirectToLocked = useCallback(() => {
+    // Don't redirect if already on dashboard or already force-exited
+    if (pathname === "/dashboard" || forceExit) {
+      if (debugMode)
+        console.log(
+          "Skipping redirect - already on dashboard or force_exit set",
+        );
+      return;
+    }
+
     // Clear exam session data
     if (typeof window !== "undefined") {
       localStorage.removeItem("session_token");
@@ -80,7 +91,7 @@ export function useCheatDetection(options: CheatDetectionOptions = {}) {
         window.location.href = "/dashboard";
       }
     }
-  }, [router, debugMode]);
+  }, [router, debugMode, pathname, forceExit]);
 
   const triggerForceExit = useCallback(
     async (reason: string) => {
