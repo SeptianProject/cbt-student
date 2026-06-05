@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState } from "react";
 import { InactivityTimeoutProvider } from "@/components/InactivityTimeoutProvider";
 
 function makeQueryClient() {
@@ -29,15 +29,6 @@ function getQueryClient() {
 
 export default function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => getQueryClient());
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>

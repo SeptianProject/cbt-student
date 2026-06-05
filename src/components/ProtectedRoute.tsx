@@ -75,6 +75,10 @@ export default function ProtectedRoute({
     return null;
   }
 
+  if (!requireExamAccess) {
+    return <>{children}</>;
+  }
+
   // If this is an exam page and state protection is required
   if (shouldEnforceExamLock) {
     if (isForceExited) {
