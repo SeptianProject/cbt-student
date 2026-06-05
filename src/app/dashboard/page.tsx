@@ -11,7 +11,7 @@ import { StudentInfoCard } from "@/components/dashboard/StudentInfoCard";
 import { DashboardActions } from "@/components/dashboard/DashboardActions";
 import { Lock } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
-import { clearForceExit, updateAuthState } from "@/store/authSlice";
+import { clearAuth, clearForceExit, updateAuthState } from "@/store/authSlice";
 
 const DashboardPage = () => {
   const router = useRouter();
@@ -93,6 +93,21 @@ const DashboardPage = () => {
   };
 
   const handleBackToLogin = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("api_token");
+      localStorage.removeItem("user_is_active");
+      localStorage.removeItem("user_is_logout");
+      localStorage.removeItem("force_exit");
+      localStorage.removeItem("force_exit_reason");
+      localStorage.removeItem("session_token");
+      localStorage.removeItem("session_id");
+      localStorage.removeItem("exam_id");
+      localStorage.removeItem("current_exam_slug");
+    }
+
+    dispatch(clearAuth());
+    dispatch(clearForceExit());
+    setHasToken(false);
     router.push("/");
   };
 
